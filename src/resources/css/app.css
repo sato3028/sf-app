@@ -1,0 +1,11 @@
+/* Googleフォントのインポート */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Body全体にNoto Sans JPフォントを適用 */
+body {
+    font-family: "Noto Sans JP", sans-serif;
+}
