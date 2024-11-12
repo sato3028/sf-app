@@ -73,6 +73,23 @@ class RoomController extends Controller
         ]);
     }
 
+    public function confirm(Request $request)
+    {
+        $data = $request->all();
+
+        // attributes がある場合、カテゴリーの名前を取得
+        if (!empty($data['attributes'])) {
+            $attributeNames = RoomAttribute::whereIn('id', $data['attributes'])->pluck('name');
+            $data['attributeNames'] = $attributeNames; // 新しいキーとして追加
+        }
+
+        return Inertia::render('Rooms/Confirm', [
+            'formData' => $data,
+        ]);
+    }
+
+
+
     public function store(Request $request)
     {
         // バリデーションの修正
