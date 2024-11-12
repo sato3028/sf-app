@@ -1,12 +1,19 @@
 <template>
-    <div class="outer-container">
-      <Navigation :currentRoute="'create'" />
-      <div class="content-panel">
-        <button class="back-button">&lt; 戻る</button>
+  <div class="outer-container">
+    <Navigation :currentRoute="'create'" />
+    <div class="content-panel">
+
+      <button class="back-button" @click="goBack">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="back-icon">
+          <path fill="#6b4ef5" d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.2 288 416 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-306.7 0L214.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/>
+        </svg>
+        <span>戻る</span>
+      </button>
         <div class="form-container">
           <h2 class="section-title">ユーザー情報</h2>
+          <div class="divider"></div>
 
-          <form @submit.prevent="createRoom" class="room-form">
+          <form @submit.prevent="confirmRoom" class="room-form">
             <!-- ゲーム内の名前 -->
             <div class="input-group">
               <label for="host_username">ゲーム内の名前</label>
@@ -15,11 +22,37 @@
 
             <!-- ランク帯入力 -->
             <div class="input-group">
-              <label for="host_rank">ランク帯: <span class="rank-display">{{ displayHostRank }}</span></label>
-              <v-slider v-model="form.host_rank" :max="25000" :min="1" :step="1" hide-details class="input-field"></v-slider>
-              <p v-if="form.host_rank === 25000" class="mr-display">MR: {{ form.host_mr }}</p>
-              <v-slider v-if="form.host_rank === 25000" v-model="form.host_mr" :max="2500" :min="1000" :step="1" hide-details class="input-field"></v-slider>
-            </div>
+  <label for="host_rank">
+    ランク帯:
+    <span :style="{ color: getRankColor(form.host_rank) }" class="rank-display">
+      {{ getRankText(form.host_rank) }}
+    </span>
+  </label>
+  <v-slider
+    v-model="form.host_rank"
+    :max="25000"
+    :min="1"
+    :step="1"
+    hide-details
+    track-color="#d6d0da"
+    thumb-color="#6b4ef5"
+    class="input-field"
+  ></v-slider>
+  <p v-if="form.host_rank === 25000" class="mr-display">
+    <span class="text-black">MR:</span><span style="color: #6b4ef5">{{ form.host_mr }}</span><span class="text-black">MR</span>
+  </p>
+  <v-slider
+    v-if="form.host_rank === 25000"
+    v-model="form.host_mr"
+    :max="2500"
+    :min="1000"
+    :step="1"
+    hide-details
+    track-color="#d6d0da"
+    thumb-color="#6b4ef5"
+    class="input-field"
+  ></v-slider>
+</div>
 
             <!-- 使用キャラクターの選択 -->
             <div class="input-group">
@@ -28,6 +61,7 @@
             </div>
 
             <h2 class="section-title">募集内容</h2>
+            <div class="divider"></div>
 
             <!-- 募集タイトル -->
             <div class="input-group">
@@ -37,12 +71,41 @@
 
             <!-- 募集ランク帯 -->
             <div class="input-group">
-              <label for="rank_range">募集ランク帯</label>
-              <v-range-slider v-model="form.rank_range" :max="25000" :min="1" :step="1" hide-details></v-range-slider>
-              <p>ランク範囲: {{ form.rank_range[0] }} - {{ form.rank_range[1] }}</p>
-              <v-range-slider v-if="form.rank_range[1] === 25000" v-model="form.mr_range" :max="2500" :min="1000" :step="1" hide-details></v-range-slider>
-              <p v-if="form.rank_range[1] === 25000">MR範囲: {{ form.mr_range[0] }} - {{ form.mr_range[1] }}</p>
-            </div>
+  <label for="rank_range">
+    募集ランク帯:
+    <span :style="{ color: getRankColor(form.rank_range[0]) }" class="rank-display">
+      {{ getRankText(form.rank_range[0]) }}
+    </span>
+    -
+    <span :style="{ color: getRankColor(form.rank_range[1]) }" class="rank-display">
+      {{ getRankText(form.rank_range[1]) }}
+    </span>
+  </label>
+  <v-range-slider
+    v-model="form.rank_range"
+    :max="25000"
+    :min="1"
+    :step="getStep(form.rank_range[0])"
+    hide-details
+    track-color="#d6d0da"
+    thumb-color="#6b4ef5"
+    class="input-field"
+  ></v-range-slider>
+            <p v-if="form.rank_range[1] === 25000" class="mr-display">
+                <span class="text-black">MR範囲:</span>{{ form.mr_range[0] }}<span class="text-black">MR</span> - {{ form.mr_range[1] }}<span class="text-black">MR</span>
+            </p>
+            <v-range-slider
+              v-if="form.rank_range[1] === 25000"
+              v-model="form.mr_range"
+              :max="2500"
+              :min="1000"
+              :step="1"
+              hide-details
+              track-color="#d6d0da"
+              thumb-color="#6b4ef5"
+              class="input-field"
+            ></v-range-slider>
+          </div>
 
             <!-- 募集キャラクターの選択 -->
             <div class="input-group">
@@ -52,12 +115,22 @@
 
             <!-- カテゴリーの選択 -->
             <h2 class="section-title">カテゴリー</h2>
-            <div class="attributes-container input-field">
-              <div v-for="attribute in attributes" :key="attribute.id" class="checkbox-group">
-                <input type="checkbox" :id="'attribute' + attribute.id" v-model="form.attributes" :value="attribute.id">
-                <label :for="'attribute' + attribute.id">{{ attribute.name }}</label>
-              </div>
-            </div>
+            <div class="divider"></div>
+          <div class="dropdown" @click="toggleMenu">
+            <span>カテゴリーを選択</span>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="arrow-icon">
+              <path v-if="!menuOpen" d="M201.4 374.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 306.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z"/>
+              <path v-else d="M201.4 137.4c12.5-12.5 32.8-12.5 45.3 0l160 160c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L224 205.3 86.6 342.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3l160-160z"/>
+            </svg>
+          </div>
+  <div v-if="menuOpen" class="checkbox-list">
+    <div v-for="attribute in attributes" :key="attribute.id" :class="['checkbox-item', { selected: form.attributes.includes(attribute.id) }]">
+      <input type="checkbox" :id="'attribute' + attribute.id" v-model="form.attributes" :value="attribute.id">
+      <label :for="'attribute' + attribute.id">{{ attribute.name }}</label>
+    </div>
+  </div>
+
+
 
             <!-- 確認ボタン -->
             <div class="input-group">
@@ -70,7 +143,7 @@
   </template>
 
   <script setup>
-  import { reactive, computed, defineProps } from 'vue';
+  import { reactive, computed, defineProps, ref, nextTick, onMounted } from 'vue';
   import { router } from '@inertiajs/vue3';
   import Navigation from '@/Components/Navigation.vue';
 
@@ -84,13 +157,59 @@
     host_username: '',
     title: '',
     host_rank: 1,
-    host_mr: null,
-    rank_range: [1, 25000],
+    host_mr: 1500,
+    rank_range: [1, 10000],
     mr_range: [1000, 2500],
     host_characters: [],
     requested_characters: [],
     attributes: []
   });
+
+  onMounted(() => {
+  const savedForm = sessionStorage.getItem('createForm');
+  if (savedForm) {
+    Object.assign(form, JSON.parse(savedForm));
+  }
+});
+
+  const lpRanges = [
+    { rank: 'MASTER', min: 25000, color: '#1BF4B9' },
+    { rank: 'DIAMOND5', min: 23800, max: 24999, color: '#D85899' },
+    { rank: 'DIAMOND4', min: 22600, max: 23800, color: '#D85899' },
+    { rank: 'DIAMOND3', min: 21400, max: 22600, color: '#D85899' },
+    { rank: 'DIAMOND2', min: 20200, max: 21400, color: '#D85899' },
+    { rank: 'DIAMOND1', min: 19000, max: 20200, color: '#D85899' },
+    { rank: 'PLATINUM5', min: 17800, max: 19000, color: '#16B4E7' },
+    { rank: 'PLATINUM4', min: 16600, max: 17800, color: '#16B4E7' },
+    { rank: 'PLATINUM3', min: 15400, max: 16600, color: '#16B4E7' },
+    { rank: 'PLATINUM2', min: 14200, max: 15400, color: '#16B4E7' },
+    { rank: 'PLATINUM1', min: 13000, max: 14200, color: '#16B4E7' },
+    { rank: 'GOLD5', min: 12200, max: 13000, color: '#D7AA4E' },
+    { rank: 'GOLD4', min: 11800, max: 12200, color: '#D7AA4E' },
+    { rank: 'GOLD3', min: 11400, max: 11800, color: '#D7AA4E' },
+    { rank: 'GOLD2', min: 9800, max: 11400, color: '#D7AA4E' },
+    { rank: 'GOLD1', min: 9000, max: 9800, color: '#D7AA4E' },
+    { rank: 'SILVER5', min: 8200, max: 9000, color: '#333132' },
+    { rank: 'SILVER4', min: 7400, max: 8200, color: '#333132' },
+    { rank: 'SILVER3', min: 6600, max: 7400, color: '#333132' },
+    { rank: 'SILVER2', min: 5800, max: 6600, color: '#333132' },
+    { rank: 'SILVER1', min: 5000, max: 5800, color: '#333132' },
+    { rank: 'BRONZE5', min: 4600, max: 5000, color: '#9B754F' },
+    { rank: 'BRONZE4', min: 4200, max: 4600, color: '#9B754F' },
+    { rank: 'BRONZE3', min: 3800, max: 4200, color: '#9B754F' },
+    { rank: 'BRONZE2', min: 3400, max: 3800, color: '#9B754F' },
+    { rank: 'BRONZE1', min: 3000, max: 3400, color: '#9B754F' },
+    { rank: 'IRON5', min: 2600, max: 3000, color: '#2A2A2A' },
+    { rank: 'IRON4', min: 2200, max: 2600, color: '#2A2A2A' },
+    { rank: 'IRON3', min: 1800, max: 2200, color: '#2A2A2A' },
+    { rank: 'IRON2', min: 1400, max: 1800, color: '#2A2A2A' },
+    { rank: 'IRON1', min: 1000, max: 1400, color: '#2A2A2A' },
+    { rank: 'ROOKIE5', min: 800, max: 1000, color: '#00001C' },
+    { rank: 'ROOKIE4', min: 600, max: 800, color: '#00001C' },
+    { rank: 'ROOKIE3', min: 400, max: 600, color: '#00001C' },
+    { rank: 'ROOKIE2', min: 200, max: 400, color: '#00001C' },
+    { rank: 'ROOKIE1', min: 0, max: 200, color: '#00001C' }
+  ];
 
   // ランク表示の処理
   const displayHostRank = computed(() => {
@@ -99,6 +218,13 @@
     }
     return `LP: ${form.host_rank}`;
   });
+
+  const displayRankRange = computed(() => {
+  if (form.rank_range[1] === 25000) {
+    return `LP: ${form.rank_range[0]} - MASTER, MR: ${form.mr_range[0] || 1000} - ${form.mr_range[1] || 2500}`;
+  }
+  return `LP: ${form.rank_range[0]} - ${form.rank_range[1]}`;
+});
 
   // 募集ランク範囲の表示
   const displayStartRank = computed(() => form.rank_range[0] || '未設定');
@@ -115,6 +241,35 @@
     if (form.mr_range[0] > form.mr_range[1]) form.mr_range[0] = form.mr_range[1];
     if (form.mr_range[1] < form.mr_range[0]) form.mr_range[1] = form.mr_range[0];
   };
+
+  function getRankText(lp) {
+    if (lp === 25000) return 'MASTER';  // 25000の場合に必ずMASTERを返す
+    const range = lpRanges.find(r => lp >= r.min && (r.max === undefined || lp <= r.max));
+    return range ? range.rank : '';
+}
+
+
+
+function getRankColor(lp) {
+  if (lp === 25000) {
+    return '#1BF4B9'; // MASTERの色
+  }
+  const range = lpRanges.find(r => lp >= r.min && (r.max === undefined || lp < r.max));
+  return range ? range.color : '#645e69'; // マッチがない場合のデフォルトカラー
+}
+
+
+function getRankRangeText(range) {
+  const startRank = getRankText(range[0]);
+  const endRank = getRankText(range[1]);
+  return `${startRank} - ${endRank}`;
+}
+
+function getStep(lp) {
+    const range = lpRanges.find(r => lp >= r.min && (r.max === undefined || lp <= r.max));
+    return range ? (range.max ? Math.ceil((range.max - range.min) / 5) : 1) : 100;
+}
+
 
   // ルーム作成処理
   const createRoom = () => {
@@ -138,6 +293,28 @@
       },
     });
   };
+
+  const confirmRoom = () => {
+  const formData = { ...form };
+
+  // フォームデータをsessionStorageに保存
+  sessionStorage.setItem('createForm', JSON.stringify(formData));
+
+  // 確認ページに遷移
+  router.post('/rooms/confirm', formData);
+};
+
+
+  const menuOpen = ref(false);
+
+const toggleMenu = () => {
+  menuOpen.value = !menuOpen.value;
+};
+
+
+  const goBack = () => {
+  router.get('/rooms');
+};
   </script>
 
   <style scoped>
@@ -154,13 +331,22 @@
   }
 
   .back-button {
-    color: #5531FF;
-    background: none;
-    border: none;
-    font-size: 16px;
-    cursor: pointer;
-    margin-bottom: 20px;
-  }
+  display: flex;
+  align-items: center;
+  color: #5531FF;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.back-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  fill: #6b4ef5;
+}
 
   .form-container {
     background: white;
@@ -173,12 +359,18 @@
 }
 
 
-  .section-title {
-    font-size: 18px;
-    font-weight: bold;
-    margin-bottom: 20px;
-    color: #333;
-  }
+.section-title {
+  font-size: 24px; /* フォントサイズを大きく */
+  font-weight: bold;
+  color: #6B4EF5; /* 紫色 */
+  margin-bottom: 10px; /* 下の線との間隔 */
+}
+
+.divider {
+  height: 2px;
+  background-color: #ddd; /* グレー色 */
+  margin-bottom: 20px; /* 下の内容との間隔 */
+}
 
   .input-group {
     margin-bottom: 20px;
@@ -220,13 +412,90 @@
     flex-direction: column;
   }
 
-  .checkbox-group {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-  }
 
-  .checkbox-group input[type="checkbox"] {
-    margin-right: 10px;
+  .dropdown {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  background-color: #F9FAFC;
+  font-weight: bold;
+}
+
+.dropdown:hover {
+  background-color: #f0f0f0;
+}
+
+.arrow-icon {
+  width: 20px;
+  height: 20px;
+  fill: #6b4ef5;
+}
+
+.checkbox-list {
+  display: flex;
+  flex-wrap: wrap;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 10px;
+  background-color: #F9FAFC;
+  margin-top: -1px;
+  gap: 10px;
+  transition: all 0.3s ease;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background-color: transparent; /* 初期状態は透明 */
+  transition: background-color 0.2s ease;
+}
+
+.checkbox-item.selected {
+  background-color: white; /* 選択時に白背景 */
+}
+
+.checkbox-item input[type="checkbox"] {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  background-color: transparent;
+  outline: none; /* 青い枠を消す */
+  box-shadow: none;
+}
+
+.checkbox-item label {
+  font-size: 16px;
+  font-weight: bold; /* 太字に設定 */
+}
+
+.checkbox-item input[type="checkbox"]:checked + label {
+  color: #6b4ef5;
+}
+
+.checkbox-item input[type="checkbox"]:checked {
+  background-color: #6b4ef5;
+  border: 1px solid #ccc;
+}
+
+.input-group {
+  margin-top: 20px;
+}
+
+.text-black {
+    color: black;
+    font-weight: normal;
   }
   </style>

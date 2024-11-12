@@ -44,6 +44,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
     Route::get('/rooms/create', [RoomController::class, 'create'])->name('rooms.create');
     Route::post('/rooms', [RoomController::class, 'store'])->name('rooms.store');
+    Route::post('/rooms/confirm', [RoomController::class, 'confirm'])->name('rooms.confirm');
     Route::get('/rooms/{room}', [RoomController::class, 'show'])->name('rooms.show');
     Route::post('/rooms/{room}/join', [RoomController::class, 'join'])->name('rooms.join');
     Route::post('/rooms/{room}/leave', [RoomController::class, 'leave'])->name('rooms.leave');
