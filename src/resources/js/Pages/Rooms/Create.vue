@@ -16,9 +16,10 @@
           <form @submit.prevent="confirmRoom" class="room-form">
             <!-- ゲーム内の名前 -->
             <div class="input-group">
-              <label for="host_username">ゲーム内の名前</label>
-              <input v-model="form.host_username" type="text" id="host_username" placeholder="ユーザー名" required />
-            </div>
+  <label for="host_username">ゲーム内の名前</label>
+  <input v-model="form.host_username" type="text" id="host_username" placeholder="ユーザー名" />
+  <p v-if="formErrors.host_username" class="error-message">{{ formErrors.host_username }}</p>
+</div>
 
             <!-- ランク帯入力 -->
             <div class="input-group">
@@ -56,18 +57,20 @@
 
             <!-- 使用キャラクターの選択 -->
             <div class="input-group">
-              <label for="host_characters">使用キャラクター</label>
-              <v-select v-model="form.host_characters" :items="characters" label="キャラクター" chips multiple dense outlined></v-select>
-            </div>
+  <label for="host_characters">使用キャラクター</label>
+  <v-select v-model="form.host_characters" :items="characters" label="キャラクター" chips multiple dense outlined></v-select>
+  <p v-if="formErrors.host_characters" class="error-message">{{ formErrors.host_characters }}</p>
+</div>
 
             <h2 class="section-title">募集内容</h2>
             <div class="divider"></div>
 
             <!-- 募集タイトル -->
             <div class="input-group">
-              <label for="title">募集タイトル</label>
-              <input v-model="form.title" type="text" id="title" placeholder="募集タイトル" required />
-            </div>
+  <label for="title">募集タイトル</label>
+  <input v-model="form.title" type="text" id="title" placeholder="募集タイトル" />
+  <p v-if="formErrors.title" class="error-message">{{ formErrors.title }}</p>
+</div>
 
             <!-- 募集ランク帯 -->
             <div class="input-group">
@@ -109,9 +112,10 @@
 
             <!-- 募集キャラクターの選択 -->
             <div class="input-group">
-              <label for="requested_characters">募集キャラクター</label>
-              <v-select v-model="form.requested_characters" :items="characters" label="キャラクター" chips multiple dense outlined></v-select>
-            </div>
+  <label for="requested_characters">募集キャラクター</label>
+  <v-select v-model="form.requested_characters" :items="characters" label="キャラクター" chips multiple dense outlined></v-select>
+  <p v-if="formErrors.requested_characters" class="error-message">{{ formErrors.requested_characters }}</p>
+</div>
 
             <!-- カテゴリーの選択 -->
             <h2 class="section-title">カテゴリー</h2>
@@ -226,22 +230,6 @@
   return `LP: ${form.rank_range[0]} - ${form.rank_range[1]}`;
 });
 
-  // 募集ランク範囲の表示
-  const displayStartRank = computed(() => form.rank_range[0] || '未設定');
-  const displayEndRank = computed(() => form.rank_range[1] ? `${form.rank_range[1]} LP` : '未設定');
-
-  // ホストのランクのバリデーション処理
-  const validateHostRank = () => {
-    if (form.host_rank > 25000) form.host_rank = 25000;
-    if (form.host_rank < 1) form.host_rank = 1;
-  };
-
-  // MR範囲のバリデーション処理
-  const validateMRRange = () => {
-    if (form.mr_range[0] > form.mr_range[1]) form.mr_range[0] = form.mr_range[1];
-    if (form.mr_range[1] < form.mr_range[0]) form.mr_range[1] = form.mr_range[0];
-  };
-
   function getRankText(lp) {
     if (lp === 25000) return 'MASTER';  // 25000の場合に必ずMASTERを返す
     const range = lpRanges.find(r => lp >= r.min && (r.max === undefined || lp <= r.max));
@@ -258,50 +246,36 @@ function getRankColor(lp) {
   return range ? range.color : '#645e69'; // マッチがない場合のデフォルトカラー
 }
 
-
-function getRankRangeText(range) {
-  const startRank = getRankText(range[0]);
-  const endRank = getRankText(range[1]);
-  return `${startRank} - ${endRank}`;
-}
-
 function getStep(lp) {
-    const range = lpRanges.find(r => lp >= r.min && (r.max === undefined || lp <= r.max));
-    return range ? (range.max ? Math.ceil((range.max - range.min) / 5) : 1) : 100;
+  if (lp === 0) return 100; // ROOKIE1のときにステップを設定
+  const range = lpRanges.find(r => lp >= r.min && (r.max === undefined || lp <= r.max));
+  return range ? 1 : 100; // すべてのランクでステップを1に設定
 }
 
 
-  // ルーム作成処理
-  const createRoom = () => {
-    const formData = {
-      title: form.title,
-      host_username: form.host_username,
-      host_characters: form.host_characters,
-      rank_range: form.rank_range,
-      mr_range: form.mr_range,
-      host_rank: form.host_rank,
-      requested_characters: form.requested_characters,
-      attributes: form.attributes,
-    };
+const formErrors = reactive({
+  host_username: '',
+  host_characters: '',
+  title: '',
+  requested_characters: '',
+});
 
-    router.post('/rooms', formData, {
-      onSuccess: () => {
-        router.visit('/');
-      },
-      onError: (errors) => {
-        console.error('エラー:', errors);
-      },
-    });
-  };
+const validateForm = () => {
+  formErrors.host_username = form.host_username ? '' : 'この項目を入力してください';
+  formErrors.host_characters = form.host_characters.length ? '' : 'この項目を入力してください';
+  formErrors.title = form.title ? '' : 'この項目を入力してください';
+  formErrors.requested_characters = form.requested_characters.length ? '' : 'この項目を入力してください';
 
-  const confirmRoom = () => {
-  const formData = { ...form };
+  // エラーが一つもない場合にtrueを返す
+  return !Object.values(formErrors).some(error => error);
+};
 
-  // フォームデータをsessionStorageに保存
-  sessionStorage.setItem('createForm', JSON.stringify(formData));
-
-  // 確認ページに遷移
-  router.post('/rooms/confirm', formData);
+const confirmRoom = () => {
+  if (validateForm()) {
+    const formData = { ...form };
+    sessionStorage.setItem('createForm', JSON.stringify(formData));
+    router.post('/rooms/confirm', formData);
+  }
 };
 
 
@@ -318,9 +292,12 @@ const toggleMenu = () => {
   </script>
 
   <style scoped>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap');
+
   .outer-container {
     display: flex;
     height: 100vh;
+    font-family: "Noto Sans JP", sans-serif;
   }
 
   .content-panel {
@@ -498,4 +475,11 @@ const toggleMenu = () => {
     color: black;
     font-weight: normal;
   }
+
+  .error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
   </style>

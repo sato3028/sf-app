@@ -18,6 +18,7 @@ use App\Http\Controllers\ChatController;
 | contains the "web" middleware group. Now create something great!
 |
 */
+
 Route::get('/auth/google', [GoogleLoginController::class, 'redirectToGoogle'])
     ->name('login.google');
 
@@ -25,28 +26,28 @@ Route::get('/auth/google/callback', [GoogleLoginController::class, 'handleGoogle
     ->name('login.google.callback');
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    return redirect()->route('rooms.index');
 });
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+// /rooms はログインなしでアクセス可能
+Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
+
+// 認証が必要なルート
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
+
     Route::get('/rooms/create', [RoomController::class, 'create'])->name('rooms.create');
     Route::post('/rooms', [RoomController::class, 'store'])->name('rooms.store');
     Route::post('/rooms/confirm', [RoomController::class, 'confirm'])->name('rooms.confirm');
     Route::get('/rooms/{room}', [RoomController::class, 'show'])->name('rooms.show');
     Route::post('/rooms/{room}/join', [RoomController::class, 'join'])->name('rooms.join');
+    Route::delete('/rooms/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
     Route::post('/rooms/{room}/leave', [RoomController::class, 'leave'])->name('rooms.leave');
     Route::post('/rooms/{room}/chats', [ChatController::class, 'store'])->name('chats.store');
 });

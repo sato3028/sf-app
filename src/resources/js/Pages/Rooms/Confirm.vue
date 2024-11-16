@@ -160,9 +160,12 @@ return range ? { rank: range.rank, color: range.color } : { rank: '', color: '#6
   </script>
 
   <style scoped>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap');
+
   .outer-container {
     display: flex;
     height: 100vh;
+    font-family: "Noto Sans JP", sans-serif;
   }
 
   .content-panel {
