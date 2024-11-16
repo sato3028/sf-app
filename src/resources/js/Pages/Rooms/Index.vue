@@ -72,22 +72,36 @@
 
                 <!-- カテゴリー -->
                 <div class="room-categories">
-                  <span v-for="attribute in room.attributes" :key="attribute.id" class="category-chip">{{ attribute.name }}</span>
-                </div>
+  <span v-for="attribute in room.attributes" :key="attribute.id" class="category-chip">{{ attribute.name }}</span>
+</div>
 
                 <!-- 募集ランクとキャラクター -->
                 <div class="room-recruit-info">
-                  <p>
-                    募集ランク:
-                    <span v-if="room.max_rank === 25000">
-                      {{ getMasterRankRange(room.min_rank, room.min_mr, room.max_mr) }}
-                    </span>
-                    <span v-else>
-                      {{ getRankRange(room.min_rank, room.max_rank) }}
-                    </span>
-                  </p>
-                  <p class="spaced">募集キャラクター: {{ room.requested_characters || '未設定' }}</p>
-                </div>
+  <p>
+    募集ランク:
+    <span v-if="room.max_rank === 25000">
+      <span :style="{ color: getMasterRankRange(room.min_rank, room.min_mr, room.max_mr).minColor, fontWeight: 'bold' }">
+        {{ getMasterRankRange(room.min_rank, room.min_mr, room.max_mr).text.split(' - ')[0] }}
+      </span>
+      -
+      <span :style="{ color: getMasterRankRange(room.min_rank, room.min_mr, room.max_mr).maxColor, fontWeight: 'bold' }">
+        {{ getMasterRankRange(room.min_rank, room.min_mr, room.max_mr).text.split(' - ')[1] }}
+      </span>
+    </span>
+    <span v-else>
+      <span :style="{ color: getRankRange(room.min_rank, room.max_rank).minColor, fontWeight: 'bold' }">
+        {{ getRankRange(room.min_rank, room.max_rank).text.split(' - ')[0] }}
+      </span>
+      -
+      <span :style="{ color: getRankRange(room.min_rank, room.max_rank).maxColor, fontWeight: 'bold' }">
+        {{ getRankRange(room.min_rank, room.max_rank).text.split(' - ')[1] }}
+      </span>
+    </span>
+  </p>
+  <p class="spaced">募集キャラクター: {{ room.requested_characters || '未設定' }}</p>
+</div>
+
+
 
                 <!-- 募集ランクとユーザー名間の線 -->
                 <hr class="separator" />
@@ -95,7 +109,7 @@
                 <!-- ユーザー名、ランク、キャラクター画像 -->
                 <div class="room-user-info">
                   <p class="username">ユーザー名: {{ room.host_username }}</p>
-                  <span class="rank-badge">{{ getHostRank(room.host_rank, room.host_mr) }}</span>
+                  <span class="rank-badge" :style="getRankBadgeStyle(room.host_rank)">{{ getHostRank(room.host_rank, room.host_mr) }}</span>
                   <span class="character-img">キャラクター画像</span>
                   <button @click="joinRoom(room.id)" class="join-room-button">入室</button>
                 </div>
@@ -196,80 +210,104 @@
 
   // ランク範囲のリスト
   const lpRanges = [
-    { rank: 'MASTER', min: 25000, color: '#1BF4B9' },
-    { rank: 'DIAMOND5', min: 23800, max: 25000, color: '#D85899' },
-    { rank: 'DIAMOND4', min: 22600, max: 23800, color: '#D85899' },
-    { rank: 'DIAMOND3', min: 21400, max: 22600, color: '#D85899' },
-    { rank: 'DIAMOND2', min: 20200, max: 21400, color: '#D85899' },
-    { rank: 'DIAMOND1', min: 19000, max: 20200, color: '#D85899' },
-    { rank: 'PLATINUM5', min: 17800, max: 19000, color: '#16B4E7' },
-    { rank: 'PLATINUM4', min: 16600, max: 17800, color: '#16B4E7' },
-    { rank: 'PLATINUM3', min: 15400, max: 16600, color: '#16B4E7' },
-    { rank: 'PLATINUM2', min: 14200, max: 15400, color: '#16B4E7' },
-    { rank: 'PLATINUM1', min: 13000, max: 14200, color: '#16B4E7' },
-    { rank: 'GOLD5', min: 12200, max: 13000, color: '#D7AA4E' },
-    { rank: 'GOLD4', min: 11800, max: 12200, color: '#D7AA4E' },
-    { rank: 'GOLD3', min: 11400, max: 11800, color: '#D7AA4E' },
-    { rank: 'GOLD2', min: 9800, max: 11400, color: '#D7AA4E' },
-    { rank: 'GOLD1', min: 9000, max: 9800, color: '#D7AA4E' },
-    { rank: 'SILVER5', min: 8200, max: 9000, color: '#333132' },
-    { rank: 'SILVER4', min: 7400, max: 8200, color: '#333132' },
-    { rank: 'SILVER3', min: 6600, max: 7400, color: '#333132' },
-    { rank: 'SILVER2', min: 5800, max: 6600, color: '#333132' },
-    { rank: 'SILVER1', min: 5000, max: 5800, color: '#333132' },
-    { rank: 'BRONZE5', min: 4600, max: 5000, color: '#9B754F' },
-    { rank: 'BRONZE4', min: 4200, max: 4600, color: '#9B754F' },
-    { rank: 'BRONZE3', min: 3800, max: 4200, color: '#9B754F' },
-    { rank: 'BRONZE2', min: 3400, max: 3800, color: '#9B754F' },
-    { rank: 'BRONZE1', min: 3000, max: 3400, color: '#9B754F' },
-    { rank: 'IRON5', min: 2600, max: 3000, color: '#2A2A2A' },
-    { rank: 'IRON4', min: 2200, max: 2600, color: '#2A2A2A' },
-    { rank: 'IRON3', min: 1800, max: 2200, color: '#2A2A2A' },
-    { rank: 'IRON2', min: 1400, max: 1800, color: '#2A2A2A' },
-    { rank: 'IRON1', min: 1000, max: 1400, color: '#2A2A2A' },
-    { rank: 'ROOKIE5', min: 800, max: 1000, color: '#00001C' },
-    { rank: 'ROOKIE4', min: 600, max: 800, color: '#00001C' },
-    { rank: 'ROOKIE3', min: 400, max: 600, color: '#00001C' },
-    { rank: 'ROOKIE2', min: 200, max: 400, color: '#00001C' },
-    { rank: 'ROOKIE1', min: 0, max: 200, color: '#00001C' }
+    { rank: 'MASTER', min: 25000, color: '#17C89D', bgColor: '#E6FCF6', textColor: '#17C89D' },
+    { rank: 'DIAMOND5', min: 23800, max: 25000, color: '#D85899', bgColor: '#FCE7EF', textColor: '#D85899' },
+    { rank: 'DIAMOND4', min: 22600, max: 23800, color: '#D85899', bgColor: '#FCE7EF', textColor: '#D85899' },
+    { rank: 'DIAMOND3', min: 21400, max: 22600, color: '#D85899', bgColor: '#FCE7EF', textColor: '#D85899' },
+    { rank: 'DIAMOND2', min: 20200, max: 21400, color: '#D85899', bgColor: '#FCE7EF', textColor: '#D85899' },
+    { rank: 'DIAMOND1', min: 19000, max: 20200, color: '#D85899', bgColor: '#FCE7EF', textColor: '#D85899' },
+    { rank: 'PLATINUM5', min: 17800, max: 19000, color: '#16B4E7', bgColor: '#E6F7FC', textColor: '#16B4E7' },
+    { rank: 'PLATINUM4', min: 16600, max: 17800, color: '#16B4E7', bgColor: '#E6F7FC', textColor: '#16B4E7' },
+    { rank: 'PLATINUM3', min: 15400, max: 16600, color: '#16B4E7', bgColor: '#E6F7FC', textColor: '#16B4E7' },
+    { rank: 'PLATINUM2', min: 14200, max: 15400, color: '#16B4E7', bgColor: '#E6F7FC', textColor: '#16B4E7' },
+    { rank: 'PLATINUM1', min: 13000, max: 14200, color: '#16B4E7', bgColor: '#E6F7FC', textColor: '#16B4E7' },
+    { rank: 'GOLD5', min: 12200, max: 13000, color: '#D7AA4E', bgColor: '#FFF4E0', textColor: '#D7AA4E' },
+    { rank: 'GOLD4', min: 11800, max: 12200, color: '#D7AA4E', bgColor: '#FFF4E0', textColor: '#D7AA4E' },
+    { rank: 'GOLD3', min: 11400, max: 11800, color: '#D7AA4E', bgColor: '#FFF4E0', textColor: '#D7AA4E' },
+    { rank: 'GOLD2', min: 9800, max: 11400, color: '#D7AA4E', bgColor: '#FFF4E0', textColor: '#D7AA4E' },
+    { rank: 'GOLD1', min: 9000, max: 9800, color: '#D7AA4E', bgColor: '#FFF4E0', textColor: '#D7AA4E' },
+    { rank: 'SILVER5', min: 8200, max: 9000, color: '#333132', bgColor: '#E6E6E6', textColor: '#333132' },
+    { rank: 'SILVER4', min: 7400, max: 8200, color: '#333132', bgColor: '#E6E6E6', textColor: '#333132' },
+    { rank: 'SILVER3', min: 6600, max: 7400, color: '#333132', bgColor: '#E6E6E6', textColor: '#333132' },
+    { rank: 'SILVER2', min: 5800, max: 6600, color: '#333132', bgColor: '#E6E6E6', textColor: '#333132' },
+    { rank: 'SILVER1', min: 5000, max: 5800, color: '#333132', bgColor: '#E6E6E6', textColor: '#333132' },
+    { rank: 'BRONZE5', min: 4600, max: 5000, color: '#9B754F', bgColor: '#F5EBE1', textColor: '#9B754F' },
+    { rank: 'BRONZE4', min: 4200, max: 4600, color: '#9B754F', bgColor: '#F5EBE1', textColor: '#9B754F' },
+    { rank: 'BRONZE3', min: 3800, max: 4200, color: '#9B754F', bgColor: '#F5EBE1', textColor: '#9B754F' },
+    { rank: 'BRONZE2', min: 3400, max: 3800, color: '#9B754F', bgColor: '#F5EBE1', textColor: '#9B754F' },
+    { rank: 'BRONZE1', min: 3000, max: 3400, color: '#9B754F', bgColor: '#F5EBE1', textColor: '#9B754F' },
+    { rank: 'IRON5', min: 2600, max: 3000, color: '#2A2A2A', bgColor: '#E6E6E6', textColor: '#2A2A2A'  },
+    { rank: 'IRON4', min: 2200, max: 2600, color: '#2A2A2A', bgColor: '#E6E6E6', textColor: '#2A2A2A'  },
+    { rank: 'IRON3', min: 1800, max: 2200, color: '#2A2A2A', bgColor: '#E6E6E6', textColor: '#2A2A2A'  },
+    { rank: 'IRON2', min: 1400, max: 1800, color: '#2A2A2A', bgColor: '#E6E6E6', textColor: '#2A2A2A'  },
+    { rank: 'IRON1', min: 1000, max: 1400, color: '#2A2A2A', bgColor: '#E6E6E6', textColor: '#2A2A2A'  },
+    { rank: 'ROOKIE5', min: 800, max: 1000, color: '#00001C', bgColor: '#D9D9E6', textColor: '#00001C' },
+    { rank: 'ROOKIE4', min: 600, max: 800, color: '#00001C', bgColor: '#D9D9E6', textColor: '#00001C' },
+    { rank: 'ROOKIE3', min: 400, max: 600, color: '#00001C', bgColor: '#D9D9E6', textColor: '#00001C' },
+    { rank: 'ROOKIE2', min: 200, max: 400, color: '#00001C', bgColor: '#D9D9E6', textColor: '#00001C' },
+    { rank: 'ROOKIE1', min: 0, max: 200, color: '#00001C', bgColor: '#D9D9E6', textColor: '#00001C' }
   ];
 
   // 募集ランクの範囲を取得する関数
   function getRankRange(minRank, maxRank) {
-    const startRank = lpRanges.find(range => minRank >= range.min && (!range.max || minRank <= range.max));
-    const endRank = lpRanges.find(range => maxRank >= range.min && (!range.max || maxRank <= range.max));
+  const startRank = lpRanges.find(range => minRank >= range.min && (!range.max || minRank <= range.max));
+  const endRank = maxRank === 25000
+    ? lpRanges.find(range => range.rank === 'MASTER')
+    : lpRanges.find(range => maxRank >= range.min && (!range.max || maxRank <= range.max));
 
-    if (maxRank === 25000) {
-      return `${startRank.rank} - MASTER`;
-    }
-    return `${startRank.rank} - ${endRank.rank}`;
-  }
+  return {
+    text: maxRank === 25000 ? `${startRank.rank} - MASTER` : `${startRank.rank} - ${endRank.rank}`,
+    minColor: startRank ? startRank.color : '#333132',
+    maxColor: endRank ? endRank.color : '#333132'
+  };
+}
+
+
 
   // MASTERランクの範囲を取得する関数
   function getMasterRankRange(minRank, minMR, maxMR) {
-    const startRank = lpRanges.find(range => minRank >= range.min && (!range.max || minRank <= range.max));
-    if (minRank === 25000) {
-      return `MASTER ${minMR}MR - MASTER ${maxMR}MR`;
-    }
-    return `${startRank.rank} - MASTER, MR: ${maxMR}MR`;
-  }
+  const startRank = lpRanges.find(range => minRank >= range.min && (!range.max || minRank <= range.max));
+  const masterColor = lpRanges.find(range => range.rank === 'MASTER').color;
+
+  return {
+    text: minRank === 25000
+      ? `MASTER ${minMR}MR - MASTER ${maxMR}MR`
+      : `${startRank.rank} - MASTER MR: ${maxMR}MR`,
+    minColor: startRank ? startRank.color : '#333132',
+    maxColor: masterColor
+  };
+}
+
 
   // ホストランクを取得する関数
   function getHostRank(hostRank, hostMR) {
     const rank = lpRanges.find(range => hostRank >= range.min && (!range.max || hostRank <= range.max));
 
     if (hostRank === 25000) {
-      return `MASTER, MR: ${hostMR}MR`;
+      return `MASTER MR: ${hostMR}MR`;
     }
     return `${rank.rank}`;
   }
+
+  function getRankColor(rank) {
+  const range = lpRanges.find(range => rank >= range.min && (range.max === undefined || rank <= range.max));
+  return range ? range.color : '#333132';
+}
+
+function getRankBadgeStyle(rank) {
+  const range = lpRanges.find(r => rank >= r.min && (!r.max || rank <= r.max));
+  return range ? { backgroundColor: range.bgColor, color: range.textColor } : {};
+}
   </script>
 
   <style scoped>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap');
+
   .outer-container {
     display: flex;
     height: 100vh;
     overflow: hidden;
+
   }
 
   .content-container {
@@ -390,11 +428,12 @@
   }
 
   .rank-badge {
-    background-color: #b3d9ff;
-    padding: 5px 10px;
-    border-radius: 20px;
-    margin-right: 10px;
-  }
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
 
   .character-img {
     background-color: #a6a6a6;
@@ -421,4 +460,14 @@
     border-top: 1px solid #ddd;
     margin: 10px 0;
   }
+
+  .category-chip {
+  background-color: #F4F0FE; /* カテゴリーの背景色 */
+  color: #6B4EF5; /* カテゴリーのテキスト色 */
+  padding: 5px 10px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-right: 5px; /* カテゴリー間の余白 */
+}
+
   </style>

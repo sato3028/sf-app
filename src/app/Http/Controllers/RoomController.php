@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Chat;
 use App\Models\Participant;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class RoomController extends Controller
 {
@@ -102,6 +104,7 @@ class RoomController extends Controller
             'rank_range.0' => 'required|integer|min:1|max:25000',
             'rank_range.1' => 'required|integer|min:1|max:25000',
             'host_rank' => 'required|integer|min:1|max:25000',
+            'host_mr' => 'nullable|integer|min:1000|max:2500',
             'mr_range' => 'nullable|array',
             'mr_range.0' => 'nullable|integer|min:1000|max:2500',
             'mr_range.1' => 'nullable|integer|min:1000|max:2500',
@@ -139,7 +142,7 @@ class RoomController extends Controller
 
     public function show($roomId)
     {
-        $room = Room::with('participants.user', 'chats.user')->findOrFail($roomId);
+        $room = Room::with(['participants.user', 'chats.user', 'attributes'])->findOrFail($roomId);
         return Inertia::render('Rooms/Show', ['room' => $room]);
     }
 
@@ -153,13 +156,28 @@ class RoomController extends Controller
         return redirect()->route('rooms.show', $roomId);
     }
 
+    public function destroy($roomId)
+    {
+        $room = Room::findOrFail($roomId);
+
+        // ホストのみ削除可能
+        if (auth()->id() === $room->host_id) {
+            $room->delete();
+            return redirect()->route('rooms.index')->with('message', 'ルームを解散しました');
+        }
+
+        return back()->with('error', 'ルームの解散はホストのみ可能です');
+    }
+
     public function leave($roomId)
     {
         $participant = Participant::where('room_id', $roomId)->where('user_id', auth()->id())->first();
+
         if ($participant) {
             $participant->delete();
+            return redirect()->route('rooms.index')->with('message', 'ルームを退出しました');
         }
 
-        return redirect()->route('rooms.index');
+        return back()->with('error', 'ルーム退出に失敗しました');
     }
 }

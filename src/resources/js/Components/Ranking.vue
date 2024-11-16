@@ -19,6 +19,8 @@
   </script>
 
   <style scoped>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap');
+
   .ranking-container {
     background-color: #6B4EF5;
     width: 300px;
@@ -31,6 +33,7 @@
     flex-direction: column;
     align-items: center;
     overflow-y: auto; /* コンテンツが溢れた時にスクロールする */
+    font-family: "Noto Sans JP", sans-serif;
   }
 
   .ranking-header {
