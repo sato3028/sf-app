@@ -108,16 +108,23 @@
   };
 
   const goToCreateRoom = () => {
-    router.get('/rooms/create');
-  };
+  if (!isLoggedIn.value) {
+    console.log('User is not logged in. Showing modal.');
+    isModalOpen.value = true; // モーダルを表示
+    return;
+  }
 
-  const logout = () => {
-    router.post(route('logout'), {}, {
-      onSuccess: () => {
-        isLoggedIn.value = false;
-      }
-    });
-  };
+  router.get('/rooms/create');
+};
+
+const logout = () => {
+  router.post(route('logout'), {}, {
+    onSuccess: () => {
+      isLoggedIn.value = false; // ログイン状態をfalseに更新
+      location.reload(); // ページをリロードして状態を強制更新
+    },
+  });
+};
   </script>
 
   <style scoped>

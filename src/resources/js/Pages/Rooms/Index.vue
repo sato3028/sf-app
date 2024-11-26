@@ -121,14 +121,19 @@
 
       <!-- 右側のランキング部分 -->
       <Ranking />
+      <ModalLogin :show="isModalOpen" @close="isModalOpen = false" />
     </div>
   </template>
 
   <script setup>
   import { reactive, ref, computed, defineProps, onMounted } from 'vue';
-  import { router } from '@inertiajs/vue3';
+  import { router, usePage } from '@inertiajs/vue3';
   import Navigation from '@/Components/Navigation.vue';
   import Ranking from '@/Components/Ranking.vue';
+  import ModalLogin from '@/Pages/Auth/ModalLogin.vue';
+
+    const isModalOpen = ref(false); // モーダルの表示状態を管理
+    const isLoggedIn = ref(usePage().props.auth.user !== null); // ログイン状態を管理
 
   const props = defineProps({
     rooms: Array,
@@ -164,17 +169,28 @@
     });
   });
 
+  const toggleLoginModal = () => {
+  isModalOpen.value = !isModalOpen.value;
+};
+
   // ルームに参加する関数
   const joinRoom = (roomId) => {
-    router.post(`/rooms/${roomId}/join`, {}, {
-      onSuccess: () => {
-        router.visit(`/rooms/${roomId}`);
-      },
-      onError: (errors) => {
-        console.log(errors);
-      },
-    });
-  };
+  if (!isLoggedIn.value) {
+    console.log('User is not logged in, showing modal.');
+    isModalOpen.value = true; // モーダルを表示
+    return; // 処理を中断
+  }
+
+  // ログインしている場合はルームに参加
+  router.post(`/rooms/${roomId}/join`, {}, {
+    onSuccess: () => {
+      router.visit(`/rooms/${roomId}`);
+    },
+    onError: (errors) => {
+      console.log(errors);
+    },
+  });
+};
 
   // フィルターを適用する関数
   const applyFilters = () => {
