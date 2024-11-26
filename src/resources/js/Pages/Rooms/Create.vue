@@ -3,7 +3,7 @@
     <Navigation :currentRoute="'create'" />
     <div class="content-panel">
 
-      <button class="back-button" @click="goBack">
+        <button class="back-button" @click="goBack">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="back-icon">
           <path fill="#6b4ef5" d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.2 288 416 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-306.7 0L214.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/>
         </svg>
@@ -57,10 +57,30 @@
 
             <!-- 使用キャラクターの選択 -->
             <div class="input-group">
-  <label for="host_characters">使用キャラクター</label>
-  <v-select v-model="form.host_characters" :items="characters" label="キャラクター" chips multiple dense outlined></v-select>
-  <p v-if="formErrors.host_characters" class="error-message">{{ formErrors.host_characters }}</p>
+                <div class="character-label">
+    <label for="host_characters">使用キャラクター</label>
+  </div>
+  <div class="add-character-container">
+    <button class="add-character-button" type="button" @click="showCharacterModal = true">
+      キャラクターを追加
+    </button>
+  </div>
+            <div v-if="selectedCharacters.length" class="selected-characters-list">
+              <div v-for="(char, index) in selectedCharacters" :key="index" class="character-card">
+                <img :src="char.image" alt="" class="character-image" />
+                <button class="delete-button" @click="removeCharacter(index)">×</button>
+                <p>{{ char.type }}</p>
+              </div>
+            </div>
 </div>
+
+<CharacterModal
+            v-if="showCharacterModal"
+            :show="showCharacterModal"
+            :characters="characters"
+            @close="closeCharacterModal"
+            @add="addCharacter"
+          />
 
             <h2 class="section-title">募集内容</h2>
             <div class="divider"></div>
@@ -112,10 +132,30 @@
 
             <!-- 募集キャラクターの選択 -->
             <div class="input-group">
-  <label for="requested_characters">募集キャラクター</label>
-  <v-select v-model="form.requested_characters" :items="characters" label="キャラクター" chips multiple dense outlined></v-select>
-  <p v-if="formErrors.requested_characters" class="error-message">{{ formErrors.requested_characters }}</p>
-</div>
+    <div class="character-label">
+      <label for="requested_characters">募集キャラクター</label>
+    </div>
+    <div class="add-character-container">
+      <button class="add-character-button" type="button" @click="showRequestedCharacterModal = true">
+        募集キャラクターを追加
+      </button>
+    </div>
+    <div v-if="requestedCharacters.length" class="selected-characters-list">
+      <div v-for="(char, index) in requestedCharacters" :key="index" class="character-card">
+        <img :src="char.image" alt="" class="character-image" />
+        <button class="delete-button" @click="removeRequestedCharacter(index)">×</button>
+        <p>{{ char.type }}</p>
+      </div>
+    </div>
+  </div>
+
+  <CharacterModal
+      v-if="showRequestedCharacterModal"
+      :show="showRequestedCharacterModal"
+      :characters="characters"
+      @close="closeRequestedCharacterModal"
+      @add="addRequestedCharacter"
+    />
 
             <!-- カテゴリーの選択 -->
             <h2 class="section-title">カテゴリー</h2>
@@ -150,12 +190,11 @@
   import { reactive, computed, defineProps, ref, nextTick, onMounted } from 'vue';
   import { router } from '@inertiajs/vue3';
   import Navigation from '@/Components/Navigation.vue';
+  import CharacterModal from "@/Components/CharacterModal.vue";
 
   const props = defineProps({
     attributes: Array
   });
-
-  const characters = ['リュウ', 'ルーク', 'ジェイミー', '春麗', 'ガイル', 'キンバリー', 'ジュリ', 'ケン', 'ブランカ', 'ダルシム', 'エドモンド本田', 'DJ', 'マノン', 'マリーザ', 'JP', 'ザンギエフ', 'リリィ', 'キャミィ', 'ラシード', 'アキ', 'エド', '豪鬼'];
 
   const form = reactive({
     host_username: '',
@@ -175,6 +214,82 @@
     Object.assign(form, JSON.parse(savedForm));
   }
 });
+
+const characters = [
+  { name: 'リュウ', image: '/images/ryu_icon.jpg' },
+  { name: 'ルーク', image: '/images/luke_icon.jpg' },
+    { name: 'ジェイミー', image: '/images/jamie_icon.jpg' },
+    { name: '春麗', image: '/images/chunli_icon.jpg' },
+    { name: 'ガイル', image: '/images/guile_icon.jpg' },
+    { name: 'キンバリー', image: '/images/kimberly_icon.jpg' },
+    { name: 'ジュリ', image: '/images/juri_icon.jpg' },
+    { name: 'ケン', image: '/images/ken_icon.jpg' },
+    { name: 'ブランカ', image: '/images/blanka_icon.jpg' },
+    { name: 'ダルシム', image: '/images/dhalsim_icon.jpg' },
+    { name: 'エドモンド本田', image: '/images/honda_icon.jpg' },
+    { name: 'DJ', image: '/images/deejay_icon.jpg' },
+    { name: 'マノン', image: '/images/manon_icon.jpg' },
+    { name: 'マリーザ', image: '/images/marisa_icon.jpg' },
+    { name: 'JP', image: '/images/jp_icon.jpg' },
+    { name: 'ザンギエフ', image: '/images/zangief_icon.jpg' },
+    { name: 'リリィ', image: '/images/lily_icon.jpg' },
+    { name: 'キャミィ', image: '/images/cammy_icon.jpg' },
+    { name: 'ラシード', image: '/images/rashid_icon.jpg' },
+    { name: 'アキ', image: '/images/aki_icon.jpg' },
+    { name: 'エド', image: '/images/ed_icon.jpg' },
+    { name: '豪鬼', image: '/images/gouki_icon.jpg' },
+    { name: 'ベガ', image: '/images/vega_icon.jpg' },
+    { name: 'テリー', image: '/images/terry_icon.jpg' },
+    { name: 'なんでも', image: '/images/all_icon.jpg' },
+];
+
+const selectedCharacters = reactive([]); // 選択済みのキャラクターリスト
+const showCharacterModal = ref(false); // モーダルの表示状態
+
+const addCharacter = (character) => {
+  selectedCharacters.push(character);
+};
+
+const confirmRoom = () => {
+  if (selectedCharacters.length === 0) {
+    console.error("キャラクターが選択されていません。");
+    return;
+  }
+
+  const formData = {
+    ...form,
+    host_characters: selectedCharacters,
+  };
+
+  router.post("/rooms/confirm", formData);
+};
+
+const closeCharacterModal = () => {
+  showCharacterModal.value = false;
+};
+
+const removeCharacter = (index) => {
+  selectedCharacters.splice(index, 1);
+};
+
+const requestedCharacters = reactive([]); // 募集キャラクターリスト
+const showRequestedCharacterModal = ref(false); // 募集キャラクターモーダルの表示状態
+
+// 募集キャラクターを追加
+const addRequestedCharacter = (character) => {
+  requestedCharacters.push(character);
+};
+
+// 募集キャラクターモーダルを閉じる
+const closeRequestedCharacterModal = () => {
+  showRequestedCharacterModal.value = false;
+};
+
+// 募集キャラクターを削除
+const removeRequestedCharacter = (index) => {
+  requestedCharacters.splice(index, 1);
+};
+
 
   const lpRanges = [
     { rank: 'MASTER', min: 25000, color: '#1BF4B9' },
@@ -270,15 +385,6 @@ const validateForm = () => {
   return !Object.values(formErrors).some(error => error);
 };
 
-const confirmRoom = () => {
-  if (validateForm()) {
-    const formData = { ...form };
-    sessionStorage.setItem('createForm', JSON.stringify(formData));
-    router.post('/rooms/confirm', formData);
-  }
-};
-
-
   const menuOpen = ref(false);
 
 const toggleMenu = () => {
@@ -289,10 +395,16 @@ const toggleMenu = () => {
   const goBack = () => {
   router.get('/rooms');
 };
+
+
   </script>
 
   <style scoped>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap');
+
+    label {
+        font-size: 17px;
+    }
 
   .outer-container {
     display: flex;
@@ -482,4 +594,63 @@ const toggleMenu = () => {
   margin-top: 5px;
 }
 
+.character-label {
+  margin-bottom: 5px; /* テキストとボタンの間隔を設定 */
+}
+
+.add-character-container {
+  margin-bottom: 15px; /* ボタンと選択キャラクターリストの間隔を設定 */
+}
+
+
+.add-character-button {
+  padding: 8px;
+  background-color: #6b4ef5;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.add-character-button:hover {
+  background-color: #937cff;
+}
+
+.selected-characters-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+.character-card {
+    position: relative; /* 削除ボタンを配置するため */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.character-image {
+    width: 100px; /* 横幅を設定 */
+  aspect-ratio: 2 / 1; /* 縦1横2のアスペクト比 */
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.delete-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-color: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background-color: #ff4c4c;
+}
   </style>

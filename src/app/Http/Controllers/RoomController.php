@@ -65,25 +65,48 @@ class RoomController extends Controller
     {
         $attributes = RoomAttribute::all();
         $characters = [
-            'リュウ', 'ルーク', 'ジェイミー', '春麗', 'ガイル', 'キンバリー', 'ジュリ', 'ケン',
-            'ブランカ', 'ダルシム', 'エドモンド本田', 'DJ', 'マノン', 'マリーザ', 'JP', 'ザンギエフ',
-            'リリィ', 'キャミィ', 'ラシード', 'アキ', 'エド', '豪鬼'
+            ['name' => 'リュウ', 'image' => '/images/ryu_icon.jpg'],
+            ['name' => 'ルーク', 'image' => '/images/luke_icon.jpg'],
+            ['name' => 'ジェイミー', 'image' => '/images/jamie_icon.jpg'],
+            ['name' => '春麗', 'image' => '/images/chunli_icon.jpg'],
+            ['name' => 'ガイル', 'image' => '/images/guile_icon.jpg'],
+            ['name' => 'キンバリー', 'image' => '/images/kimberly_icon.jpg'],
+            ['name' => 'ジュリ', 'image' => '/images/juri_icon.jpg'],
+            ['name' => 'ケン', 'image' => '/images/ken_icon.jpg'],
+            ['name' => 'ブランカ', 'image' => '/images/blanka_icon.jpg'],
+            ['name' => 'ダルシム', 'image' => '/images/dhalsim_icon.jpg'],
+            ['name' => 'エドモンド本田', 'image' => '/images/honda_icon.jpg'],
+            ['name' => 'DJ', 'image' => '/images/deejay_icon.jpg'],
+            ['name' => 'マノン', 'image' => '/images/manon_icon.jpg'],
+            ['name' => 'マリーザ', 'image' => '/images/marisa_icon.jpg'],
+            ['name' => 'JP', 'image' => '/images/jp_icon.jpg'],
+            ['name' => 'ザンギエフ', 'image' => '/images/zangief_icon.jpg'],
+            ['name' => 'リリィ', 'image' => '/images/lily_icon.jpg'],
+            ['name' => 'キャミィ', 'image' => '/images/cammy_icon.jpg'],
+            ['name' => 'ラシード', 'image' => '/images/rashid_icon.jpg'],
+            ['name' => 'アキ', 'image' => '/images/aki_icon.jpg'],
+            ['name' => 'エド', 'image' => '/images/ed_icon.jpg'],
+            ['name' => '豪鬼', 'image' => '/images/gouki_icon.jpg'],
+            ['name' => 'ベガ', 'image' => '/images/vega_icon.jpg'],
+            ['name' => 'テリー', 'image' => '/images/terry_icon.jpg'],
+            ['name' => 'なんでも', 'image' => '/images/all_icon.jpg'],
         ];
+
         return Inertia::render('Rooms/Create', [
             'attributes' => $attributes,
             'characters' => $characters
         ]);
     }
 
+
     public function confirm(Request $request)
     {
-        $data = $request->all();
+        $data = $request->validate([
+'requestedCharacters' => 'required|array',
+'requestedCharacters.*.name' => 'required|string',
+'requestedCharacters.*.type' => 'required|string|in:指定なし,クラシック,モダン',
 
-        // attributes がある場合、カテゴリーの名前を取得
-        if (!empty($data['attributes'])) {
-            $attributeNames = RoomAttribute::whereIn('id', $data['attributes'])->pluck('name');
-            $data['attributeNames'] = $attributeNames; // 新しいキーとして追加
-        }
+        ]);
 
         return Inertia::render('Rooms/Confirm', [
             'formData' => $data,
@@ -118,7 +141,7 @@ class RoomController extends Controller
             $room->title = $validated['title'];
             $room->host_username = $validated['host_username'];
             $room->host_characters = json_encode($validated['host_characters']);
-            $room->requested_characters = json_encode($validated['requested_characters']); // 募集キャラクターを必ず保存
+            $room->requested_characters = json_encode($validated['requested_characters']); // 募集キャラクターを保存
             $room->host_rank = $validated['host_rank'];
             $room->host_mr = $validated['host_mr'] ?? null;
             $room->min_rank = $validated['rank_range'][0];
