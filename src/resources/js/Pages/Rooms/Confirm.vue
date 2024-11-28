@@ -12,21 +12,31 @@
 
           <div class="input-group">
             <label>ゲーム内の名前</label>
-            <p>{{ formData.host_username }}</p>
+            <p>{{ formData.host_username || '未入力' }}</p>
           </div>
 
           <div class="input-group">
   <label>ランク帯</label>
-  <p :style="{ color: getRankText(formData.host_rank).color }">{{ getRankText(formData.host_rank).rank }}</p>
+  <p :style="{ color: getRankText(formData.host_rank)?.color || '#000' }">
+    {{ getRankText(formData.host_rank)?.rank || '不明' }}
+  </p>
   <p v-if="formData.host_rank === 25000">
-    <span class="text-black">MR:</span> {{ formData.host_mr }} <span class="text-black">MR</span>
+    <span class="text-black">MR:</span> {{ formData.host_mr || '未設定' }} <span class="text-black">MR</span>
   </p>
 </div>
 
           <div class="input-group">
-            <label>使用キャラクター</label>
-            <p>{{ formData.host_characters.join(', ') }}</p>
-          </div>
+  <label>使用キャラクター</label>
+  <div class="character-list">
+    <div
+      v-for="(character, index) in unwrapProxy(formData.host_characters) || []"
+      :key="index"
+      class="character-card"
+    >
+      <img :src="getCharacterImage(character) || '/default-image.jpg'" alt="キャラクター画像" class="character-image" />
+    </div>
+  </div>
+</div>
 
           <!-- 募集内容セクション -->
           <h2 class="section-title">募集内容</h2>
@@ -34,39 +44,47 @@
 
           <div class="input-group">
             <label>募集タイトル</label>
-            <p>{{ formData.title }}</p>
+            <p>{{ formData.title || '未設定' }}</p>
           </div>
 
           <div class="input-group">
   <label>募集ランク帯</label>
   <p>
-    <span :style="{ color: getRankText(formData.rank_range[0]).color }">
-      {{ getRankText(formData.rank_range[0]).rank }}
+    <span :style="{ color: getRankText(formData.rank_range?.[0])?.color || '#000' }">
+      {{ getRankText(formData.rank_range?.[0])?.rank || '不明' }}
     </span>
     -
-    <span :style="{ color: getRankText(formData.rank_range[1]).color }">
-      {{ getRankText(formData.rank_range[1]).rank }}
+    <span :style="{ color: getRankText(formData.rank_range?.[1])?.color || '#000' }">
+      {{ getRankText(formData.rank_range?.[1])?.rank || '不明' }}
     </span>
   </p>
-  <p v-if="formData.rank_range[1] === 25000">
-    <span class="text-black">MR範囲:</span> {{ formData.mr_range[0] }}MR - {{ formData.mr_range[1] }}MR
+  <p v-if="formData.rank_range?.[1] === 25000">
+    <span class="text-black">MR範囲:</span>
+    {{ formData.mr_range?.[0] || '未設定' }}MR - {{ formData.mr_range?.[1] || '未設定' }}MR
   </p>
 </div>
 
           <div class="input-group">
             <label>募集キャラクター</label>
-            <p>{{ formData.requested_characters.join(', ') }}</p>
+            <div class="character-list">
+              <div
+                v-for="(character, index) in formData.requested_characters || []"
+                :key="index"
+                class="character-card"
+              >
+                <img :src="getCharacterImage(character) || '/default-image.jpg'" alt="キャラクター画像" class="character-image" />
+              </div>
+            </div>
           </div>
 
           <!-- カテゴリーセクション -->
           <h2 class="section-title">カテゴリー</h2>
-        <div class="divider"></div>
+          <div class="divider"></div>
 
-        <div class="input-group">
-  <label>カテゴリー</label>
-  <p>{{ formData.attributeNames ? formData.attributeNames.join(', ') : 'なし' }}</p>
-</div>
-
+          <div class="input-group">
+            <label>カテゴリー</label>
+            <p>{{ selectedCategories.length ? selectedCategories.join(', ') : 'なし' }}</p>
+          </div>
 
           <!-- ボタン -->
           <div class="button-group">
@@ -78,9 +96,10 @@
     </div>
   </template>
 
+
   <script setup>
   import { router } from '@inertiajs/vue3';
-  import { defineProps, computed } from 'vue';
+  import { defineProps, computed, onMounted } from 'vue';
   import Navigation from '@/Components/Navigation.vue';
 
   const props = defineProps({
@@ -88,20 +107,63 @@
     attributes: Array,
   });
 
-  function submitRoom() {
-    router.post('/rooms', props.formData, {
-      onSuccess: () => {
-        router.visit('/');
-      },
-      onError: (errors) => {
-        console.error('エラー:', errors);
-      },
-    });
-  }
+const characters = [
+  { name: 'リュウ', image: '/images/ryu_icon.jpg' },
+  { name: 'ルーク', image: '/images/luke_icon.jpg' },
+  { name: 'ジェイミー', image: '/images/jamie_icon.jpg' },
+  { name: '春麗', image: '/images/chunli_icon.jpg' },
+  { name: 'ガイル', image: '/images/guile_icon.jpg' },
+  { name: 'キンバリー', image: '/images/kimberly_icon.jpg' },
+  { name: 'ジュリ', image: '/images/juri_icon.jpg' },
+  { name: 'ケン', image: '/images/ken_icon.jpg' },
+  { name: 'ブランカ', image: '/images/blanka_icon.jpg' },
+  { name: 'ダルシム', image: '/images/dhalsim_icon.jpg' },
+  { name: 'エドモンド本田', image: '/images/honda_icon.jpg' },
+  { name: 'DJ', image: '/images/deejay_icon.jpg' },
+  { name: 'マノン', image: '/images/manon_icon.jpg' },
+  { name: 'マリーザ', image: '/images/marisa_icon.jpg' },
+  { name: 'JP', image: '/images/jp_icon.jpg' },
+  { name: 'ザンギエフ', image: '/images/zangief_icon.jpg' },
+  { name: 'リリィ', image: '/images/lily_icon.jpg' },
+  { name: 'キャミィ', image: '/images/cammy_icon.jpg' },
+  { name: 'ラシード', image: '/images/rashid_icon.jpg' },
+  { name: 'アキ', image: '/images/aki_icon.jpg' },
+  { name: 'エド', image: '/images/ed_icon.jpg' },
+  { name: '豪鬼', image: '/images/gouki_icon.jpg' },
+  { name: 'ベガ', image: '/images/vega_icon.jpg' },
+  { name: 'テリー', image: '/images/terry_icon.jpg' },
+  { name: 'なんでも', image: '/images/all_icon.jpg' },
+];
 
-  function goBack() {
-    router.get('/rooms/create');
-  }
+function getCharacterImage(character) {
+  // キャラクター名を取得
+  const characterName = typeof character === 'object' && character.name ? character.name : character;
+
+  // 一致するキャラクターを検索
+  const matchedCharacter = characters.find((char) => char.name === characterName);
+  return matchedCharacter ? matchedCharacter.image : '/default-image.jpg';
+}
+
+
+
+function submitRoom() {
+  router.post('/rooms', props.formData, {
+    onSuccess: () => {
+      sessionStorage.removeItem('createForm'); // 入力内容をクリア
+      router.visit('/');
+    },
+    onError: (errors) => {
+      console.error('エラー:', errors);
+    },
+  });
+}
+
+
+function goBack() {
+  // formDataをsessionStorageに保存
+  sessionStorage.setItem('createForm', JSON.stringify(props.formData));
+  router.get('/rooms/create');
+}
 
   function getRankText(lp) {
     const lpRanges = [
@@ -144,19 +206,29 @@
     ];
     if (lp === 25000) return { rank: 'MASTER', color: '#1BF4B9' };
 
-const range = lpRanges.find(r => lp >= r.min && (r.max === undefined || lp <= r.max));
-return range ? { rank: range.rank, color: range.color } : { rank: '', color: '#645e69' };
+    const range = lpRanges.find((r) => lp >= r.min && (r.max === undefined || lp <= r.max));
+  console.debug('ランク帯取得 - 結果:', range);
+  return range ? { rank: range.rank, color: range.color } : { rank: '不明', color: '#000' };
   }
 
   const selectedCategories = computed(() => {
   if (!props.attributes || !Array.isArray(props.attributes)) {
-    return []; // attributesが存在しない場合、空の配列を返す
+    return [];
   }
 
   return props.formData.attributes
-    .map(id => props.attributes.find(attr => attr.id === id)?.name)
-    .filter(name => name); // undefined のフィルタリング
+    ?.map((id) => props.attributes.find((attr) => attr.id === id)?.name)
+    .filter((name) => name) || [];
 });
+
+function unwrapProxy(proxyData) {
+  // Proxyデータを確認して解除
+  if (proxyData && proxyData.__v_isReactive) {
+    return JSON.parse(JSON.stringify(proxyData));
+  }
+  return proxyData;
+}
+
   </script>
 
   <style scoped>
@@ -244,4 +316,24 @@ return range ? { rank: range.rank, color: range.color } : { rank: '', color: '#6
     color: black;
     font-weight: normal;
   }
+
+  .character-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.character-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.character-image {
+  width: 100px;
+  height: 50px;
+  border-radius: 8px;
+  object-fit: cover;
+}
   </style>

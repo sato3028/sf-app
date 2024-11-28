@@ -14,12 +14,6 @@
           <div class="divider"></div>
 
           <form @submit.prevent="confirmRoom" class="room-form">
-            <!-- ゲーム内の名前 -->
-            <div class="input-group">
-  <label for="host_username">ゲーム内の名前</label>
-  <input v-model="form.host_username" type="text" id="host_username" placeholder="ユーザー名" />
-  <p v-if="formErrors.host_username" class="error-message">{{ formErrors.host_username }}</p>
-</div>
 
             <!-- ランク帯入力 -->
             <div class="input-group">
@@ -66,11 +60,19 @@
     </button>
   </div>
             <div v-if="selectedCharacters.length" class="selected-characters-list">
-              <div v-for="(char, index) in selectedCharacters" :key="index" class="character-card">
-                <img :src="char.image" alt="" class="character-image" />
-                <button class="delete-button" @click="removeCharacter(index)">×</button>
-                <p>{{ char.type }}</p>
-              </div>
+                <div
+  v-for="(char, index) in selectedCharacters"
+  :key="index"
+  class="character-card"
+  :class="{
+    'border-gray': char.type === '指定なし',
+    'border-orange': char.type === 'モダン',
+    'border-purple': char.type === 'クラシック',
+  }"
+>
+  <img :src="char.image" alt="" class="character-image" />
+  <button class="delete-button" @click="removeCharacter(index)">×</button>
+</div>
             </div>
 </div>
 
@@ -141,11 +143,19 @@
       </button>
     </div>
     <div v-if="requestedCharacters.length" class="selected-characters-list">
-      <div v-for="(char, index) in requestedCharacters" :key="index" class="character-card">
-        <img :src="char.image" alt="" class="character-image" />
-        <button class="delete-button" @click="removeRequestedCharacter(index)">×</button>
-        <p>{{ char.type }}</p>
-      </div>
+        <div
+  v-for="(char, index) in requestedCharacters"
+  :key="index"
+  class="character-card"
+  :class="{
+    'border-gray': char.type === '指定なし',
+    'border-orange': char.type === 'モダン',
+    'border-purple': char.type === 'クラシック',
+  }"
+>
+  <img :src="char.image" alt="" class="character-image" />
+  <button class="delete-button" @click="removeRequestedCharacter(index)">×</button>
+</div>
     </div>
   </div>
 
@@ -188,7 +198,7 @@
 
   <script setup>
   import { reactive, computed, defineProps, ref, nextTick, onMounted } from 'vue';
-  import { router } from '@inertiajs/vue3';
+  import { router, usePage } from '@inertiajs/vue3';
   import Navigation from '@/Components/Navigation.vue';
   import CharacterModal from "@/Components/CharacterModal.vue";
 
@@ -212,8 +222,30 @@
   const savedForm = sessionStorage.getItem('createForm');
   if (savedForm) {
     Object.assign(form, JSON.parse(savedForm));
+
+    // 使用キャラクター情報を復元
+    selectedCharacters.splice(0, selectedCharacters.length, ...(form.host_characters || []));
+    selectedCharacters.forEach((char) => {
+      char.image = getCharacterImage(char); // 画像パスを再設定
+    });
+
+    // 募集キャラクター情報を復元
+    requestedCharacters.splice(0, requestedCharacters.length, ...(form.requested_characters || []));
+    requestedCharacters.forEach((char) => {
+      char.image = getCharacterImage(char); // 画像パスを再設定
+    });
+  }
+
+  // ユーザー名を auth.user から取得し、フォームに設定
+  const user = usePage().props.auth.user; // usePage を利用
+  if (user && user.name) {
+    form.host_username = user.name; // フォームにユーザー名を設定
   }
 });
+
+
+
+
 
 const characters = [
   { name: 'リュウ', image: '/images/ryu_icon.jpg' },
@@ -248,21 +280,49 @@ const showCharacterModal = ref(false); // モーダルの表示状態
 
 const addCharacter = (character) => {
   selectedCharacters.push(character);
+  console.log("使用キャラクター:", selectedCharacters);
 };
 
 const confirmRoom = () => {
-  if (selectedCharacters.length === 0) {
-    console.error("キャラクターが選択されていません。");
-    return;
+  try {
+    console.log("confirmRoom 関数が呼び出されました");
+
+    // フォームにキャラクター情報を反映
+    form.host_characters = selectedCharacters.map((char) => ({
+      name: char.name,
+      image: char.image,
+    }));
+
+    form.requested_characters = requestedCharacters.map((char) => ({
+      name: char.name,
+      image: char.image,
+    }));
+
+    // フォームバリデーション
+    if (!validateForm()) {
+      console.error("フォームにエラーがあります:", formErrors);
+      return;
+    }
+
+    // 純粋なオブジェクトに変換
+    const formData = JSON.parse(JSON.stringify(form));
+    console.log('送信前 - formData:', JSON.stringify(formData, null, 2));
+
+    // サーバーにデータ送信
+    router.post(route("rooms.confirm"), formData, {
+      onSuccess: () => {
+        console.log("Confirmページに遷移しました");
+      },
+      onError: (errors) => {
+        console.error("エラーが発生しました:", errors);
+      },
+    });
+  } catch (error) {
+    console.error("例外が発生しました:", error);
   }
-
-  const formData = {
-    ...form,
-    host_characters: selectedCharacters,
-  };
-
-  router.post("/rooms/confirm", formData);
 };
+
+
 
 const closeCharacterModal = () => {
   showCharacterModal.value = false;
@@ -278,6 +338,7 @@ const showRequestedCharacterModal = ref(false); // 募集キャラクターモ�
 // 募集キャラクターを追加
 const addRequestedCharacter = (character) => {
   requestedCharacters.push(character);
+  console.log("募集キャラクター:", requestedCharacters);
 };
 
 // 募集キャラクターモーダルを閉じる
@@ -376,14 +437,18 @@ const formErrors = reactive({
 });
 
 const validateForm = () => {
-  formErrors.host_username = form.host_username ? '' : 'この項目を入力してください';
-  formErrors.host_characters = form.host_characters.length ? '' : 'この項目を入力してください';
-  formErrors.title = form.title ? '' : 'この項目を入力してください';
-  formErrors.requested_characters = form.requested_characters.length ? '' : 'この項目を入力してください';
+  formErrors.host_characters = form.host_characters.length
+    ? ""
+    : "この項目を入力してください";
+  formErrors.title = form.title ? "" : "この項目を入力してください";
+  formErrors.requested_characters = form.requested_characters.length
+    ? ""
+    : "この項目を入力してください";
 
-  // エラーが一つもない場合にtrueを返す
-  return !Object.values(formErrors).some(error => error);
+  // エラーがない場合はtrueを返す
+  return !Object.values(formErrors).some((error) => error);
 };
+
 
   const menuOpen = ref(false);
 
@@ -396,15 +461,20 @@ const toggleMenu = () => {
   router.get('/rooms');
 };
 
+function getCharacterImage(character) {
+  // キャラクター名を取得
+  const characterName = typeof character === 'object' && character.name ? character.name : character;
+
+  // 一致するキャラクターを検索
+  const matchedCharacter = characters.find((char) => char.name === characterName);
+  return matchedCharacter ? matchedCharacter.image : '/default-image.jpg';
+}
+
 
   </script>
 
   <style scoped>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap');
-
-    label {
-        font-size: 17px;
-    }
 
   .outer-container {
     display: flex;
@@ -462,8 +532,14 @@ const toggleMenu = () => {
 }
 
   .input-group {
-    margin-bottom: 20px;
+    margin: 20px 0;
   }
+
+  .input-group label {
+        font-size: 17px;
+        margin-bottom: 10px;
+        display: block;
+    }
 
   input[type="text"] {
     width: 100%;
@@ -579,10 +655,6 @@ const toggleMenu = () => {
   border: 1px solid #ccc;
 }
 
-.input-group {
-  margin-top: 20px;
-}
-
 .text-black {
     color: black;
     font-weight: normal;
@@ -599,7 +671,7 @@ const toggleMenu = () => {
 }
 
 .add-character-container {
-  margin-bottom: 15px; /* ボタンと選択キャラクターリストの間隔を設定 */
+  margin-bottom: 10px; /* ボタンと選択キャラクターリストの間隔を設定 */
 }
 
 
@@ -621,25 +693,39 @@ const toggleMenu = () => {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 20px;
 }
 .character-card {
-    position: relative; /* 削除ボタンを配置するため */
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-.character-image {
-    width: 100px; /* 横幅を設定 */
-  aspect-ratio: 2 / 1; /* 縦1横2のアスペクト比 */
-  object-fit: cover;
+  border: 3px solid transparent; /* デフォルトで透明 */
   border-radius: 8px;
+}
+
+.border-gray {
+  border-color: gray;
+}
+
+.border-orange {
+  border-color: orange;
+}
+
+.border-purple {
+  border-color: purple;
+}
+
+.character-image {
+  width: 100px;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+  border-radius: 4px;
 }
 
 .delete-button {
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: 1px;
+  right: 1px;
   background-color: #ff6b6b;
   color: white;
   border: none;

@@ -178,12 +178,25 @@ onMounted(() => {
 });
 
 function parseCharacters(characters) {
+  if (!characters) return [];
+
   try {
-    return JSON.parse(characters);
+    // JSON形式の文字列の場合
+    const parsed = typeof characters === 'string' ? JSON.parse(characters) : characters;
+
+    // 配列の場合、各要素の`name`を取得
+    if (Array.isArray(parsed)) {
+      return parsed.map((char) => (typeof char === 'object' && char.name ? char.name : char));
+    }
+
+    // 配列でない場合は空配列を返す
+    return [];
   } catch (e) {
-    return characters;
+    console.error("Error parsing characters:", e);
+    return [];
   }
 }
+
 </script>
 
   <style scoped>

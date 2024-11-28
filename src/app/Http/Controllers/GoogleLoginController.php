@@ -21,18 +21,21 @@ class GoogleLoginController extends Controller
             $socialiteUser = Socialite::driver('google')->user();
             $email = $socialiteUser->email;
 
-            // 更新または作成するフィールドを指定
             $user = User::updateOrCreate(
                 ['email' => $email],
                 [
-                    'name' => $socialiteUser->name,
+                    'name' => $user->name ?? '', // 名前が空の状態にする
                     'google_id' => $socialiteUser->id,
-                    'avatar' => $socialiteUser->avatar, // Google のアバター画像 URL など
-                    // 他に必要なフィールドがあれば追加
+                    'avatar' => $socialiteUser->avatar,
                 ]
             );
 
             Auth::login($user);
+
+            // 名前が空の場合は、フラグをセッションに設定してリダイレクト
+            if (empty($user->name)) {
+                return redirect()->intended('/rooms')->with('needsNameSetup', true);
+            }
 
             return redirect()->intended('/rooms');
         } catch (Exception $e) {
@@ -40,4 +43,5 @@ class GoogleLoginController extends Controller
             throw $e;
         }
     }
+
 }
