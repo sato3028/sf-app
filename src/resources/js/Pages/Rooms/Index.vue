@@ -122,7 +122,11 @@
       <!-- 右側のランキング部分 -->
       <Ranking />
       <ModalLogin :show="isModalOpen" @close="isModalOpen = false" />
-      <NameSetupModal v-if="isLoggedIn && needsNameSetup" :show="needsNameSetup" />
+      <NameSetupModal
+  v-if="isLoggedIn && needsNameSetup"
+  :show="needsNameSetup"
+  @close="needsNameSetup = false"
+/>
     </div>
   </template>
 
@@ -140,7 +144,7 @@
     const rooms = props.rooms || [];
     const attributes = props.attributes || [];
     const isLoggedIn = ref(props.auth?.user !== null);
-const needsNameSetup = computed(() => props.needsNameSetup);
+    const needsNameSetup = ref(props.needsNameSetup);
 
   onMounted(() => {
     console.log('Attributes Props:', props.attributes);

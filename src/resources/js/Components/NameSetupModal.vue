@@ -33,16 +33,19 @@
     show: Boolean,
   });
 
+  const emit = defineEmits(['close']);
+
   const name = ref('');
 
   const updateName = () => {
-    router.post(route('user.updateName'), { name: name.value }, {
-      preserveScroll: true,
-      onSuccess: () => {
-        location.reload();
-      },
-    });
-  };
+  router.post(route('user.updateName'), { name: name.value }, {
+    preserveScroll: true,
+    onSuccess: () => {
+      emit('close'); // モーダルを閉じるイベントを送信
+      router.reload(); // ページをリロード
+    },
+  });
+};
   </script>
 
   <style scoped>

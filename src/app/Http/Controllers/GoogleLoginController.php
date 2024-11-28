@@ -24,11 +24,15 @@ class GoogleLoginController extends Controller
             $user = User::updateOrCreate(
                 ['email' => $email],
                 [
-                    'name' => $user->name ?? '', // 名前が空の状態にする
                     'google_id' => $socialiteUser->id,
                     'avatar' => $socialiteUser->avatar,
                 ]
             );
+
+            if (empty($user->name)) {
+                $user->name = '';
+                $user->save();
+            }
 
             Auth::login($user);
 
