@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\GoogleLoginController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,6 +25,8 @@ Route::get('/auth/google', [GoogleLoginController::class, 'redirectToGoogle'])
 
 Route::get('/auth/google/callback', [GoogleLoginController::class, 'handleGoogleCallback'])
     ->name('login.google.callback');
+
+Route::post('/user/update-name', [UserController::class, 'updateName'])->name('user.updateName');
 
 Route::get('/', function () {
     return redirect()->route('rooms.index');

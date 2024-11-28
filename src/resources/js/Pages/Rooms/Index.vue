@@ -122,6 +122,7 @@
       <!-- 右側のランキング部分 -->
       <Ranking />
       <ModalLogin :show="isModalOpen" @close="isModalOpen = false" />
+      <NameSetupModal v-if="isLoggedIn && needsNameSetup" :show="needsNameSetup" />
     </div>
   </template>
 
@@ -131,14 +132,15 @@
   import Navigation from '@/Components/Navigation.vue';
   import Ranking from '@/Components/Ranking.vue';
   import ModalLogin from '@/Pages/Auth/ModalLogin.vue';
+  import NameSetupModal from '@/Components/NameSetupModal.vue';
 
     const isModalOpen = ref(false); // モーダルの表示状態を管理
-    const isLoggedIn = ref(usePage().props.auth.user !== null); // ログイン状態を管理
 
-  const props = defineProps({
-    rooms: Array,
-    attributes: Array,
-  });
+    const { props } = usePage();
+    const rooms = props.rooms || [];
+    const attributes = props.attributes || [];
+    const isLoggedIn = ref(props.auth?.user !== null);
+const needsNameSetup = computed(() => props.needsNameSetup);
 
   onMounted(() => {
     console.log('Attributes Props:', props.attributes);

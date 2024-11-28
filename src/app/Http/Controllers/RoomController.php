@@ -17,7 +17,7 @@ class RoomController extends Controller
     {
         $query = Room::query();
 
-        // フィルタリングロジック（前述の通り）
+        // フィルタリングロジック
         if ($request->filled('host_rank')) {
             $hostRankRange = $request->input('host_rank');
             if (is_array($hostRankRange) && count($hostRankRange) === 2) {
@@ -28,7 +28,7 @@ class RoomController extends Controller
         if ($request->filled('host_characters')) {
             $hostCharacters = $request->input('host_characters');
             if (is_array($hostCharacters) && !empty($hostCharacters)) {
-                $query->where(function($q) use ($hostCharacters) {
+                $query->where(function ($q) use ($hostCharacters) {
                     foreach ($hostCharacters as $character) {
                         $q->orWhereJsonContains('host_characters', $character);
                     }
@@ -39,7 +39,7 @@ class RoomController extends Controller
         if ($request->filled('categories')) {
             $categories = $request->input('categories');
             if (is_array($categories) && !empty($categories)) {
-                $query->whereHas('attributes', function($q) use ($categories) {
+                $query->whereHas('attributes', function ($q) use ($categories) {
                     $q->whereIn('room_attributes.id', $categories);
                 });
             }
@@ -51,15 +51,20 @@ class RoomController extends Controller
         // attributesを取得
         $attributes = \App\Models\RoomAttribute::all();
 
+        // 現在のユーザーを取得
+        $user = auth()->user();
+
+        // ユーザー名が未設定の場合のフラグ
+        $needsNameSetup = $user ? empty($user->name) : false;
+
         // ビューに渡す
         return Inertia::render('Rooms/Index', [
             'rooms' => $rooms,
-            'attributes' => $attributes,  // ここでattributesを渡す
+            'attributes' => $attributes,
+            'needsNameSetup' => $needsNameSetup, // ユーザー名変更モーダル用のフラグ
+            'user' => $user, // ログイン中のユーザー情報
         ]);
     }
-
-
-
 
     public function create()
     {
@@ -94,7 +99,8 @@ class RoomController extends Controller
 
         return Inertia::render('Rooms/Create', [
             'attributes' => $attributes,
-            'characters' => $characters
+            'characters' => $characters,
+            'user' => auth()->user()
         ]);
     }
 
@@ -102,16 +108,32 @@ class RoomController extends Controller
     public function confirm(Request $request)
     {
         $data = $request->validate([
-'requestedCharacters' => 'required|array',
-'requestedCharacters.*.name' => 'required|string',
-'requestedCharacters.*.type' => 'required|string|in:指定なし,クラシック,モダン',
-
+            'title' => 'required|string|max:255',
+            'host_characters' => 'required|array|min:1',
+            'host_characters.*.name' => 'required|string',
+            'requested_characters' => 'required|array|min:1',
+            'requested_characters.*.name' => 'required|string',
+            'host_rank' => 'required|integer|min:1|max:25000',
+            'rank_range' => 'required|array',
+            'rank_range.0' => 'required|integer|min:1|max:25000',
+            'rank_range.1' => 'required|integer|min:1|max:25000',
+            'host_mr' => 'nullable|integer|min:1000|max:2500',
+            'mr_range' => 'nullable|array',
+            'mr_range.0' => 'nullable|integer|min:1000|max:2500',
+            'mr_range.1' => 'nullable|integer|min:1000|max:2500',
+            'attributes' => 'nullable|array',
         ]);
+
+        $data['host_username'] = auth()->user()->name;
 
         return Inertia::render('Rooms/Confirm', [
             'formData' => $data,
+            'attributes' => RoomAttribute::all(),
         ]);
     }
+
+
+
 
 
 
@@ -120,7 +142,6 @@ class RoomController extends Controller
         // バリデーションの修正
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'host_username' => 'required|string|max:255',
             'host_characters' => 'required|array',
             'requested_characters' => 'required|array', // 募集キャラクターを必須に
             'rank_range' => 'required|array',
@@ -139,7 +160,7 @@ class RoomController extends Controller
             $room = new Room();
             $room->host_id = auth()->id();
             $room->title = $validated['title'];
-            $room->host_username = $validated['host_username'];
+            $room->host_username = auth()->user()->name;
             $room->host_characters = json_encode($validated['host_characters']);
             $room->requested_characters = json_encode($validated['requested_characters']); // 募集キャラクターを保存
             $room->host_rank = $validated['host_rank'];
