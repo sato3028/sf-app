@@ -15,48 +15,14 @@
           </div>
 
           <!-- フィルターセクション -->
-          <div v-if="isFilterVisible" class="filter-container">
-            <h2>フィルター</h2>
-            <div class="input-group">
-              <label for="host_characters">ホストの使用キャラクター:</label>
-              <v-select
-                v-model="filters.host_characters"
-                :items="characters"
-                label="キャラクター"
-                chips
-                multiple
-                dense
-                outlined
-                class="input-field"
-              ></v-select>
-            </div>
-
-            <div class="input-group">
-              <label for="host_rank">ホストのランク範囲: {{ filters.host_rank[0] }} LP - {{ filters.host_rank[1] }} LP</label>
-              <v-range-slider
-                v-model="filters.host_rank"
-                :max="25000"
-                :min="1"
-                :step="1"
-                hide-details
-                class="input-field"
-              ></v-range-slider>
-            </div>
-
-            <div class="input-group">
-              <label for="attributes">カテゴリー:</label>
-              <div class="attributes-container input-field">
-                <div v-if="attributes && attributes.length > 0" v-for="attribute in attributes" :key="attribute.id" class="checkbox-group">
-                  <input type="checkbox" :id="'attribute' + attribute.id" v-model="filters.attributes" :value="attribute.id">
-                  <label :for="'attribute' + attribute.id">{{ attribute.name }}</label>
-                </div>
-                <p v-else>カテゴリーが見つかりません。</p>
-              </div>
-            </div>
-
-            <button @click="applyFilters" class="filter-button">フィルターを適用</button>
-            <button @click="resetFilters" class="reset-button">リセット</button>
-          </div>
+          <FilterPanel
+            v-if="isFilterVisible"
+            :filters="filters"
+            :attributes="attributes"
+            :characters="characters"
+        @apply-filters="updateFilter"
+        @reset-filters="resetFilter"
+          />
 
           <!-- ルーム一覧表示 -->
           <div class="room-list">
@@ -72,46 +38,94 @@
 
                 <!-- カテゴリー -->
                 <div class="room-categories">
-  <span v-for="attribute in room.attributes" :key="attribute.id" class="category-chip">{{ attribute.name }}</span>
-</div>
+                  <span
+                    v-for="attribute in room.attributes"
+                    :key="attribute.id"
+                    class="category-chip"
+                  >
+                    {{ attribute.name }}
+                  </span>
+                </div>
 
                 <!-- 募集ランクとキャラクター -->
                 <div class="room-recruit-info">
-  <p>
-    募集ランク:
-    <span v-if="room.max_rank === 25000">
-      <span :style="{ color: getMasterRankRange(room.min_rank, room.min_mr, room.max_mr).minColor, fontWeight: 'bold' }">
-        {{ getMasterRankRange(room.min_rank, room.min_mr, room.max_mr).text.split(' - ')[0] }}
-      </span>
-      -
-      <span :style="{ color: getMasterRankRange(room.min_rank, room.min_mr, room.max_mr).maxColor, fontWeight: 'bold' }">
-        {{ getMasterRankRange(room.min_rank, room.min_mr, room.max_mr).text.split(' - ')[1] }}
-      </span>
-    </span>
-    <span v-else>
-      <span :style="{ color: getRankRange(room.min_rank, room.max_rank).minColor, fontWeight: 'bold' }">
-        {{ getRankRange(room.min_rank, room.max_rank).text.split(' - ')[0] }}
-      </span>
-      -
-      <span :style="{ color: getRankRange(room.min_rank, room.max_rank).maxColor, fontWeight: 'bold' }">
-        {{ getRankRange(room.min_rank, room.max_rank).text.split(' - ')[1] }}
-      </span>
-    </span>
-  </p>
-  <p class="spaced">募集キャラクター: {{ room.requested_characters || '未設定' }}</p>
-</div>
-
-
+                  <p>
+                    募集ランク:
+                    <span v-if="room.max_rank === 25000">
+                      <span
+                        :style="{ color: getMasterRankRange(room.min_rank, room.min_mr, room.max_mr).minColor, fontWeight: 'bold' }"
+                      >
+                        {{ getMasterRankRange(room.min_rank, room.min_mr, room.max_mr).text.split(' - ')[0] }}
+                      </span>
+                      -
+                      <span
+                        :style="{ color: getMasterRankRange(room.min_rank, room.min_mr, room.max_mr).maxColor, fontWeight: 'bold' }"
+                      >
+                        {{ getMasterRankRange(room.min_rank, room.min_mr, room.max_mr).text.split(' - ')[1] }}
+                      </span>
+                    </span>
+                    <span v-else>
+                      <span
+                        :style="{ color: getRankRange(room.min_rank, room.max_rank).minColor, fontWeight: 'bold' }"
+                      >
+                        {{ getRankRange(room.min_rank, room.max_rank).text.split(' - ')[0] }}
+                      </span>
+                      -
+                      <span
+                        :style="{ color: getRankRange(room.min_rank, room.max_rank).maxColor, fontWeight: 'bold' }"
+                      >
+                        {{ getRankRange(room.min_rank, room.max_rank).text.split(' - ')[1] }}
+                      </span>
+                    </span>
+                  </p>
+                  <div class="character-images">
+                    <img
+                      v-for="character in parseRequestedCharacters(room.requested_characters)"
+                      :key="character.name"
+                      :src="getCharacterImage(character.name)"
+                      :alt="character.name"
+                      class="character-image"
+                      :class="{
+                        'border-gray': character.type === '指定なし',
+                        'border-purple': character.type === 'クラシック',
+                        'border-orange': character.type === 'モダン',
+                      }"
+                    />
+                  </div>
+                </div>
 
                 <!-- 募集ランクとユーザー名間の線 -->
                 <hr class="separator" />
 
                 <!-- ユーザー名、ランク、キャラクター画像 -->
                 <div class="room-user-info">
-                  <p class="username">ユーザー名: {{ room.host_username }}</p>
-                  <span class="rank-badge" :style="getRankBadgeStyle(room.host_rank)">{{ getHostRank(room.host_rank, room.host_mr) }}</span>
-                  <span class="character-img">キャラクター画像</span>
-                  <button @click="joinRoom(room.id)" class="join-room-button">入室</button>
+                  <p class="username">{{ room.host_username }}</p>
+                  <span
+                    class="rank-badge"
+                    :style="getRankBadgeStyle(room.host_rank)"
+                  >
+                    {{ getHostRank(room.host_rank, room.host_mr) }}
+                  </span>
+                  <div class="character-images">
+                    <img
+                      v-for="character in parseRequestedCharacters(room.host_characters)"
+                      :key="character.name"
+                      :src="getCharacterImage(character.name)"
+                      :alt="character.name"
+                      class="character-image"
+                      :class="{
+                        'border-gray': character.type === '指定なし',
+                        'border-purple': character.type === 'クラシック',
+                        'border-orange': character.type === 'モダン',
+                      }"
+                    />
+                  </div>
+                  <button
+                    @click="joinRoom(room.id)"
+                    class="join-room-button"
+                  >
+                    入室
+                  </button>
                 </div>
               </div>
             </div>
@@ -122,9 +136,14 @@
       <!-- 右側のランキング部分 -->
       <Ranking />
       <ModalLogin :show="isModalOpen" @close="isModalOpen = false" />
-      <NameSetupModal v-if="isLoggedIn && needsNameSetup" :show="needsNameSetup" />
+      <NameSetupModal
+        v-if="isLoggedIn && needsNameSetup"
+        :show="needsNameSetup"
+        @close="needsNameSetup = false"
+      />
     </div>
   </template>
+
 
   <script setup>
   import { reactive, ref, computed, defineProps, onMounted } from 'vue';
@@ -133,43 +152,108 @@
   import Ranking from '@/Components/Ranking.vue';
   import ModalLogin from '@/Pages/Auth/ModalLogin.vue';
   import NameSetupModal from '@/Components/NameSetupModal.vue';
+  import FilterPanel from '@/Components/FilterPanel.vue';
 
     const isModalOpen = ref(false); // モーダルの表示状態を管理
 
     const { props } = usePage();
-    const rooms = props.rooms || [];
+    const rooms = ref(props.rooms || []); // props.rooms が渡されていれば初期化
     const attributes = props.attributes || [];
     const isLoggedIn = ref(props.auth?.user !== null);
-const needsNameSetup = computed(() => props.needsNameSetup);
+    const needsNameSetup = ref(props.needsNameSetup);
 
-  onMounted(() => {
-    console.log('Attributes Props:', props.attributes);
-  });
+    onMounted(() => {
+  console.log("Index.vueで取得したroomsデータ:", rooms.value);
+});
 
-  // キャラクターのリスト
-  const characters = [
-    'リュウ', 'ルーク', 'ジェイミー', '春麗', 'ガイル', 'キンバリー', 'ジュリ', 'ケン',
-    'ブランカ', 'ダルシム', 'エドモンド本田', 'DJ', 'マノン', 'マリーザ', 'JP', 'ザンギエフ',
-    'リリィ', 'キャミィ', 'ラシード', 'アキ', 'エド', '豪鬼'
-  ];
+
+
+  // キャラクター名から画像パスを取得する関数
+  function getCharacterImage(characterName) {
+  const character = characters.find((char) => char.name === characterName);
+  return character ? character.image : '/images/default_icon.jpg';
+}
+
+function parseRequestedCharacters(requestedCharacters) {
+  try {
+    const parsedData = JSON.parse(requestedCharacters);
+    // データ構造が配列であることを確認
+    return Array.isArray(parsedData) ? parsedData : [];
+  } catch (e) {
+    console.error('Failed to parse requested characters:', e);
+    return [];
+  }
+}
+
+const updateFilter = (newFilters) => {
+  Object.assign(filters, newFilters);
+  isFilterApplied.value = true; // フィルター適用済みとしてフラグを更新
+};
+
+// charactersリストをオブジェクト型に変更
+const characters = [
+  { name: 'リュウ', image: '/images/ryu_icon.jpg' },
+  { name: 'ルーク', image: '/images/luke_icon.jpg' },
+  { name: 'ジェイミー', image: '/images/jamie_icon.jpg' },
+  { name: '春麗', image: '/images/chunli_icon.jpg' },
+  { name: 'ガイル', image: '/images/guile_icon.jpg' },
+  { name: 'キンバリー', image: '/images/kimberly_icon.jpg' },
+  { name: 'ジュリ', image: '/images/juri_icon.jpg' },
+  { name: 'ケン', image: '/images/ken_icon.jpg' },
+  { name: 'ブランカ', image: '/images/blanka_icon.jpg' },
+  { name: 'ダルシム', image: '/images/dhalsim_icon.jpg' },
+  { name: 'エドモンド本田', image: '/images/honda_icon.jpg' },
+  { name: 'DJ', image: '/images/deejay_icon.jpg' },
+  { name: 'マノン', image: '/images/manon_icon.jpg' },
+  { name: 'マリーザ', image: '/images/marisa_icon.jpg' },
+  { name: 'JP', image: '/images/jp_icon.jpg' },
+  { name: 'ザンギエフ', image: '/images/zangief_icon.jpg' },
+  { name: 'リリィ', image: '/images/lily_icon.jpg' },
+  { name: 'キャミィ', image: '/images/cammy_icon.jpg' },
+  { name: 'ラシード', image: '/images/rashid_icon.jpg' },
+  { name: 'アキ', image: '/images/aki_icon.jpg' },
+  { name: 'エド', image: '/images/ed_icon.jpg' },
+  { name: '豪鬼', image: '/images/gouki_icon.jpg' },
+  { name: 'ベガ', image: '/images/vega_icon.jpg' },
+  { name: 'テリー', image: '/images/terry_icon.jpg' },
+  { name: 'なんでも', image: '/images/all_icon.jpg' },
+];
 
   // フィルターの設定
   const filters = reactive({
     host_rank: [1, 25000],
-    host_characters: [],
-    attributes: [],
+  host_mr_range: [1000, 2500], // ホスト用 MR 範囲
+  rank_range: [1, 25000],
+  requested_mr_range: [1000, 2500], // 募集用 MR 範囲
+  host_characters: [],
+  requested_characters: [],
+  attributes: [],
   });
+
+  const isFilterApplied = ref(false);
 
   // フィルタされたルーム一覧
   const filteredRooms = computed(() => {
-    return props.rooms.filter(room => {
-      const matchHostRank = room.host_rank >= filters.host_rank[0] && room.host_rank <= filters.host_rank[1];
-      const hostCharacters = JSON.parse(room.host_characters || '[]');
-      const matchCharacters = filters.host_characters.length === 0 || filters.host_characters.some(character => hostCharacters.includes(character));
-      const matchAttributes = filters.attributes.length === 0 || filters.attributes.every(attr => room.attributes.some(attribute => attribute.id === attr));
-      return matchHostRank && matchCharacters && matchAttributes;
-    });
+  if (!isFilterApplied.value) {
+    return rooms.value; // フィルターが適用されていない場合、全ルームを表示
+  }
+  return rooms.value.filter((room) => {
+    const isWithinRank =
+      room.host_rank >= filters.host_rank[0] &&
+      room.host_rank <= filters.host_rank[1];
+    const isWithinMR =
+      filters.host_rank[1] !== 25000 || // MASTER以外の場合は無視
+      (room.host_mr >= filters.host_mr_range[0] &&
+        room.host_mr <= filters.host_mr_range[1]);
+    const isWithinCharacters =
+      filters.host_characters.length === 0 ||
+      filters.host_characters.some((char) => room.host_characters.includes(char));
+    const isWithinAttributes =
+      filters.attributes.length === 0 ||
+      filters.attributes.every((attr) => room.attributes.includes(attr));
+    return isWithinRank && isWithinMR && isWithinCharacters && isWithinAttributes;
   });
+});
 
   const toggleLoginModal = () => {
   isModalOpen.value = !isModalOpen.value;
@@ -196,19 +280,29 @@ const needsNameSetup = computed(() => props.needsNameSetup);
 
   // フィルターを適用する関数
   const applyFilters = () => {
+    console.log('送信するフィルター:', filters);
     router.get('/rooms', {
-      host_rank: filters.host_rank,
-      host_characters: filters.host_characters,
-      categories: filters.attributes,
+        host_rank: filters.host_rank,
+        rank_range: filters.rank_range,
+        host_characters: filters.host_characters,
+        categories: filters.attributes,
     });
-  };
+};
+
 
   // フィルターをリセットする関数
-  const resetFilters = () => {
-    filters.host_rank = [1, 25000];
-    filters.host_characters = [];
-    filters.attributes = [];
-  };
+  const resetFilter = () => {
+  Object.assign(filters, {
+    host_rank: [1, 25000],
+    host_mr_range: [1000, 2500],
+    rank_range: [1, 25000],
+    requested_mr_range: [1000, 2500],
+    host_characters: [],
+    requested_characters: [],
+    attributes: [],
+  });
+  isFilterApplied.value = false; // フィルター適用を解除
+};
 
   // JSONかどうかをチェックする関数
   const isJson = (str) => {
@@ -330,7 +424,10 @@ function getRankBadgeStyle(rank) {
 
   .content-container {
     flex: 1;
-    overflow-y: hidden;
+    display: flex;
+    flex-direction: column; /* 縦方向のレイアウト */
+    height: 100%; /* 高さを全体に広げる */
+    overflow: hidden;
     margin-left: 340px;
     margin-right: 50px;
   }
@@ -340,6 +437,15 @@ function getRankBadgeStyle(rank) {
       margin-right: 100px;
     }
   }
+
+  .content-panel {
+  flex: 1;
+  overflow-y: auto; /* フィルターとルームリストをスクロール可能にする */
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* フィルターとルームリストの間にスペースを追加 */
+}
 
   .title-and-filter-button {
     display: flex;
@@ -395,9 +501,8 @@ function getRankBadgeStyle(rank) {
 
   /* Room list styling */
   .room-list {
-    padding: 20px;
-    max-height: calc(100vh - 200px);
-    overflow-y: scroll;
+    margin-top: 30px;
+    flex: 1;
   }
 
   .room {
@@ -428,10 +533,17 @@ function getRankBadgeStyle(rank) {
 
   .room-recruit-info {
     display: flex;
-    justify-content: flex-start; /* 左揃えに変更 */
-    gap: 20px; /* 募集ランクと募集キャラクター間に余白を追加 */
+    align-items: center; /* 縦方向で中央揃え */
+    gap: 20px; /* 各要素間の余白 */
     margin-bottom: 10px;
   }
+
+  .room-recruit-info p {
+  margin: 0; /* 余計な上下の余白を排除 */
+  display: flex;
+  align-items: center; /* pタグのテキストも中央揃え */
+  font-size: 18px;
+}
 
   .room-user-info {
     display: flex;
@@ -488,4 +600,28 @@ function getRankBadgeStyle(rank) {
   margin-right: 5px; /* カテゴリー間の余白 */
 }
 
+.character-images {
+  display: flex;
+  gap: 10px;
+}
+
+.character-image {
+  width: 60px;
+  height: 30px;
+  object-fit: cover;
+  border-radius: 5px;
+  border: 3px solid transparent; /* 初期状態は透明 */
+}
+
+.character-image.border-gray {
+  border-color: gray;
+}
+
+.character-image.border-purple {
+  border-color: purple;
+}
+
+.character-image.border-orange {
+  border-color: orange;
+}
   </style>

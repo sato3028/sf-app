@@ -107,6 +107,10 @@
     attributes: Array,
   });
 
+  onMounted(() => {
+    console.log("Confirm.vueで受け取ったformData:", formData);
+  });
+
 const characters = [
   { name: 'リュウ', image: '/images/ryu_icon.jpg' },
   { name: 'ルーク', image: '/images/luke_icon.jpg' },
