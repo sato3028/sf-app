@@ -25,6 +25,17 @@ class RoomController extends Controller
             }
         }
 
+        if ($request->filled('rank_range')) {
+            $rankRange = $request->input('rank_range');
+            if (is_array($rankRange) && count($rankRange) === 2) {
+                $query->where(function ($q) use ($rankRange) {
+                    $q->where('min_rank', '<=', $rankRange[1]) // 募集の最小ランクが条件内
+                      ->where('max_rank', '>=', $rankRange[0]); // 募集の最大ランクが条件内
+                });
+            }
+        }
+
+
         if ($request->filled('host_characters')) {
             $hostCharacters = $request->input('host_characters');
             if (is_array($hostCharacters) && !empty($hostCharacters)) {
@@ -111,8 +122,10 @@ class RoomController extends Controller
             'title' => 'required|string|max:255',
             'host_characters' => 'required|array|min:1',
             'host_characters.*.name' => 'required|string',
+            'host_characters.*.type' => 'required|string',
             'requested_characters' => 'required|array|min:1',
             'requested_characters.*.name' => 'required|string',
+            'requested_characters.*.type' => 'required|string',
             'host_rank' => 'required|integer|min:1|max:25000',
             'rank_range' => 'required|array',
             'rank_range.0' => 'required|integer|min:1|max:25000',

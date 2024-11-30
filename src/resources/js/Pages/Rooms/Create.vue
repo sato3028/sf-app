@@ -18,7 +18,7 @@
             <!-- ランク帯入力 -->
             <div class="input-group">
   <label for="host_rank">
-    ランク帯:
+    あなたのランク帯:
     <span :style="{ color: getRankColor(form.host_rank) }" class="rank-display">
       {{ getRankText(form.host_rank) }}
     </span>
@@ -52,7 +52,7 @@
             <!-- 使用キャラクターの選択 -->
             <div class="input-group">
                 <div class="character-label">
-    <label for="host_characters">使用キャラクター</label>
+    <label for="host_characters">あなたの使用キャラクター</label>
   </div>
   <div class="add-character-container">
     <button class="add-character-button" type="button" @click="showCharacterModal = true">
@@ -291,11 +291,13 @@ const confirmRoom = () => {
     form.host_characters = selectedCharacters.map((char) => ({
       name: char.name,
       image: char.image,
+      type: char.type,
     }));
 
     form.requested_characters = requestedCharacters.map((char) => ({
       name: char.name,
       image: char.image,
+      type: char.type,
     }));
 
     // フォームバリデーション
