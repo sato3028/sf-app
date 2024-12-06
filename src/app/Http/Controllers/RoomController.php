@@ -28,84 +28,116 @@ class RoomController extends Controller
         if ($request->filled('rank_range')) {
             $rankRange = $request->input('rank_range');
             if (is_array($rankRange) && count($rankRange) === 2) {
-                $query->where(function ($q) use ($rankRange) {
-                    $q->where('min_rank', '<=', $rankRange[1]) // 募集の最小ランクが条件内
-                      ->where('max_rank', '>=', $rankRange[0]); // 募集の最大ランクが条件内
-                });
+                $query->whereBetween('min_rank', [$rankRange[0], $rankRange[1]])
+                      ->whereBetween('max_rank', [$rankRange[0], $rankRange[1]]);
             }
         }
 
-
+        // ホストキャラクターのフィルタリング
         if ($request->filled('host_characters')) {
             $hostCharacters = $request->input('host_characters');
-            if (is_array($hostCharacters) && !empty($hostCharacters)) {
+            Log::info('受信したhost_characters:', $hostCharacters);
+
+            if (!in_array('ALL', $hostCharacters, true)) {
                 $query->where(function ($q) use ($hostCharacters) {
-                    foreach ($hostCharacters as $character) {
-                        $q->orWhereJsonContains('host_characters', $character);
+                    foreach ($hostCharacters as $name) {
+                        $q->orWhereRaw("JSON_CONTAINS(host_characters, JSON_OBJECT('name', ?))", [$name]);
                     }
                 });
             }
         }
 
-        if ($request->filled('categories')) {
-            $categories = $request->input('categories');
-            if (is_array($categories) && !empty($categories)) {
+        // 募集キャラクターのフィルタリング
+        if ($request->filled('requested_characters')) {
+            $requestedCharacters = $request->input('requested_characters');
+            Log::info('受信したrequested_characters:', $requestedCharacters);
+
+            if (!in_array('ALL', $requestedCharacters, true)) {
+                $query->where(function ($q) use ($requestedCharacters) {
+                    foreach ($requestedCharacters as $name) {
+                        $q->orWhereRaw("JSON_CONTAINS(requested_characters, JSON_OBJECT('name', ?))", [$name]);
+                    }
+                });
+            }
+        }
+
+        // カテゴリー（attributes）のフィルタリング
+        if ($request->filled('attributes')) {
+            $categories = array_map('intval', $request->input('attributes'));
+            Log::info('受信したカテゴリー:', $categories);
+
+            if (!empty($categories)) {
                 $query->whereHas('attributes', function ($q) use ($categories) {
                     $q->whereIn('room_attributes.id', $categories);
                 });
             }
         }
 
+        // 募集MR範囲のフィルタリング
+        if ($request->filled('requested_mr_range')) {
+            $requestedMrRange = $request->input('requested_mr_range');
+            if (is_array($requestedMrRange) && count($requestedMrRange) === 2) {
+                $query->whereBetween('min_mr', [$requestedMrRange[0], $requestedMrRange[1]])
+                      ->whereBetween('max_mr', [$requestedMrRange[0], $requestedMrRange[1]]);
+            }
+        }
+
         // 結果を取得
         $rooms = $query->with('attributes')->get();
 
+        // デバッグ用ログ
+        Log::info('受信したフィルター', $request->all());
+        Log::info('生成されたSQL', [
+            'query' => $query->toSql(),
+            'bindings' => $query->getBindings(),
+        ]);
+
         // attributesを取得
-        $attributes = \App\Models\RoomAttribute::all();
+        $attributes = RoomAttribute::all();
 
-        // 現在のユーザーを取得
+        // 現在のユーザー情報
         $user = auth()->user();
-
-        // ユーザー名が未設定の場合のフラグ
         $needsNameSetup = $user ? empty($user->name) : false;
 
-        // ビューに渡す
+        // レンダリング
         return Inertia::render('Rooms/Index', [
             'rooms' => $rooms,
             'attributes' => $attributes,
-            'needsNameSetup' => $needsNameSetup, // ユーザー名変更モーダル用のフラグ
-            'user' => $user, // ログイン中のユーザー情報
+            'needsNameSetup' => $needsNameSetup,
+            'user' => $user,
         ]);
     }
+
 
     public function create()
     {
         $attributes = RoomAttribute::all();
         $characters = [
-            ['name' => 'リュウ', 'image' => '/images/ryu_icon.jpg'],
-            ['name' => 'ルーク', 'image' => '/images/luke_icon.jpg'],
-            ['name' => 'ジェイミー', 'image' => '/images/jamie_icon.jpg'],
-            ['name' => '春麗', 'image' => '/images/chunli_icon.jpg'],
-            ['name' => 'ガイル', 'image' => '/images/guile_icon.jpg'],
-            ['name' => 'キンバリー', 'image' => '/images/kimberly_icon.jpg'],
-            ['name' => 'ジュリ', 'image' => '/images/juri_icon.jpg'],
-            ['name' => 'ケン', 'image' => '/images/ken_icon.jpg'],
-            ['name' => 'ブランカ', 'image' => '/images/blanka_icon.jpg'],
-            ['name' => 'ダルシム', 'image' => '/images/dhalsim_icon.jpg'],
-            ['name' => 'エドモンド本田', 'image' => '/images/honda_icon.jpg'],
-            ['name' => 'DJ', 'image' => '/images/deejay_icon.jpg'],
-            ['name' => 'マノン', 'image' => '/images/manon_icon.jpg'],
-            ['name' => 'マリーザ', 'image' => '/images/marisa_icon.jpg'],
+            ['name' => 'RYU', 'image' => '/images/ryu_icon.jpg'],
+            ['name' => 'LUKE', 'image' => '/images/luke_icon.jpg'],
+            ['name' => 'JAMIE', 'image' => '/images/jamie_icon.jpg'],
+            ['name' => 'CHUNLI', 'image' => '/images/chunli_icon.jpg'],
+            ['name' => 'GUILE', 'image' => '/images/guile_icon.jpg'],
+            ['name' => 'KIMBERLY', 'image' => '/images/kimberly_icon.jpg'],
+            ['name' => 'JURI', 'image' => '/images/juri_icon.jpg'],
+            ['name' => 'KEN', 'image' => '/images/ken_icon.jpg'],
+            ['name' => 'BLANKA', 'image' => '/images/blanka_icon.jpg'],
+            ['name' => 'DHALSIM', 'image' => '/images/dhalsim_icon.jpg'],
+            ['name' => 'HONDA', 'image' => '/images/honda_icon.jpg'],
+            ['name' => 'DEEJAY', 'image' => '/images/deejay_icon.jpg'],
+            ['name' => 'MANON', 'image' => '/images/manon_icon.jpg'],
+            ['name' => 'MARISA', 'image' => '/images/marisa_icon.jpg'],
             ['name' => 'JP', 'image' => '/images/jp_icon.jpg'],
-            ['name' => 'ザンギエフ', 'image' => '/images/zangief_icon.jpg'],
-            ['name' => 'リリィ', 'image' => '/images/lily_icon.jpg'],
-            ['name' => 'キャミィ', 'image' => '/images/cammy_icon.jpg'],
-            ['name' => 'ラシード', 'image' => '/images/rashid_icon.jpg'],
-            ['name' => 'アキ', 'image' => '/images/aki_icon.jpg'],
-            ['name' => 'エド', 'image' => '/images/ed_icon.jpg'],
-            ['name' => '豪鬼', 'image' => '/images/gouki_icon.jpg'],
-            ['name' => 'ベガ', 'image' => '/images/vega_icon.jpg'],
-            ['name' => 'テリー', 'image' => '/images/terry_icon.jpg'],
-            ['name' => 'なんでも', 'image' => '/images/all_icon.jpg'],
+            ['name' => 'ZANGIEF', 'image' => '/images/zangief_icon.jpg'],
+            ['name' => 'LILY', 'image' => '/images/lily_icon.jpg'],
+            ['name' => 'CAMMY', 'image' => '/images/cammy_icon.jpg'],
+            ['name' => 'RASHID', 'image' => '/images/rashid_icon.jpg'],
+            ['name' => 'AKI', 'image' => '/images/aki_icon.jpg'],
+            ['name' => 'ED', 'image' => '/images/ed_icon.jpg'],
+            ['name' => 'GOUKI', 'image' => '/images/gouki_icon.jpg'],
+            ['name' => 'VEGA', 'image' => '/images/vega_icon.jpg'],
+            ['name' => 'TERRY', 'image' => '/images/terry_icon.jpg'],
+            ['name' => 'ALL', 'image' => '/images/all_icon.jpg'],
         ];
 
         return Inertia::render('Rooms/Create', [
@@ -174,7 +206,9 @@ class RoomController extends Controller
             $room->host_id = auth()->id();
             $room->title = $validated['title'];
             $room->host_username = auth()->user()->name;
-            $room->host_characters = json_encode($validated['host_characters']);
+            $room->host_characters = json_encode(
+                array_map('array_map', ['strval'], $validated['host_characters'])
+            );
             $room->requested_characters = json_encode($validated['requested_characters']); // 募集キャラクターを保存
             $room->host_rank = $validated['host_rank'];
             $room->host_mr = $validated['host_mr'] ?? null;
@@ -190,6 +224,10 @@ class RoomController extends Controller
                 $room->attributes()->attach($validated['attributes']);
             }
 
+            session(['current_room_id' => $room->id]);
+
+            Log::info('現在のルームIDをセッションに保存:', ['current_room_id' => session('current_room_id')]);
+
             // Inertiaでのリダイレクト
             return Inertia::location(route('rooms.show', ['room' => $room->id]));
         } catch (\Exception $e) {
@@ -200,7 +238,10 @@ class RoomController extends Controller
     public function show($roomId)
     {
         $room = Room::with(['participants.user', 'chats.user', 'attributes'])->findOrFail($roomId);
-        return Inertia::render('Rooms/Show', ['room' => $room]);
+        return Inertia::render('Rooms/Show', [
+            'room' => $room,
+            'alert' => session('alert'), // セッションからアラートを渡す
+        ]);
     }
 
     public function join($roomId)
@@ -209,6 +250,8 @@ class RoomController extends Controller
         if ($room->participants()->count() < 2) {
             $room->participants()->create(['user_id' => auth()->id()]);
         }
+
+        session(['current_room_id' => $roomId]);
 
         return redirect()->route('rooms.show', $roomId);
     }
@@ -220,6 +263,9 @@ class RoomController extends Controller
         // ホストのみ削除可能
         if (auth()->id() === $room->host_id) {
             $room->delete();
+
+            session()->forget('current_room_id');
+
             return redirect()->route('rooms.index')->with('message', 'ルームを解散しました');
         }
 
@@ -232,6 +278,9 @@ class RoomController extends Controller
 
         if ($participant) {
             $participant->delete();
+
+            session()->forget('current_room_id');
+
             return redirect()->route('rooms.index')->with('message', 'ルームを退出しました');
         }
 

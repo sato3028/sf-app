@@ -7,7 +7,10 @@
             <span class="modal-title">キャラクターを選択</span>
             <button class="close-button" @click="closeModal">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" width="20" height="20">
-                <path fill="#6b4ef5" d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/>
+                <path
+                  fill="#6b4ef5"
+                  d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"
+                />
               </svg>
             </button>
           </div>
@@ -18,8 +21,8 @@
               v-for="char in characters"
               :key="char.name"
               class="character-card"
-              :class="{ selected: selectedCharacter?.name === char.name }"
-              @click="selectedCharacter = char"
+              :class="{ selected: isSelected(char.name) }"
+              @click="toggleCharacterSelection(char.name)"
             >
               <div
                 class="character-image"
@@ -28,69 +31,72 @@
             </div>
           </div>
 
-          <!-- 操作タイプ選択 -->
-          <div class="type-selection">
-            <h3>操作タイプ :</h3>
-            <label v-for="type in types" :key="type" class="type-label">
-    <input type="radio" :value="type" v-model="selectedType" />
-    <span class="radio-text">{{ type }}</span>
-  </label>
-          </div>
-
           <!-- モーダルアクション -->
           <div class="modal-actions">
-  <button @click="addSelectedCharacter" :disabled="!selectedCharacter || !selectedType" class="action-button">
-    追加
-  </button>
-  <button @click="closeModal" class="action-button secondary">
-    完了
-  </button>
-</div>
-
+            <button @click="applySelection" class="action-button">追加</button>
+            <button @click="closeModal" class="action-button secondary">閉じる</button>
+          </div>
         </div>
       </div>
     </teleport>
   </template>
 
-<script setup>
-import { ref } from "vue";
+  <script setup>
+  import { ref, onMounted } from "vue";
 
-const props = defineProps({
-  show: Boolean,
-  characters: Array,
+  const props = defineProps({
+    show: Boolean,
+    characters: Array,
+    selectedCharacters: Array, // 現在選択済みのキャラクター
+  });
+
+  const emit = defineEmits(['close', 'apply']);
+
+  // ローカル選択管理
+  const localSelected = ref([...props.selectedCharacters]);
+
+  // キャラクター選択トグル
+  const toggleCharacterSelection = (characterName) => {
+    const index = localSelected.value.indexOf(characterName);
+    if (index === -1) {
+        localSelected.value.push(characterName);
+    } else {
+        localSelected.value.splice(index, 1);
+    }
+};
+
+  // キャラクターが選択済みかを判定
+  const isSelected = (characterName) => localSelected.value.includes(characterName);
+
+  // 選択適用
+  const applySelection = () => {
+    const characterSelections = localSelected.value.map((characterName) => {
+        const character = props.characters.find((char) => char.name === characterName);
+        return {
+            name: characterName,
+            image: character ? character.image : '/images/default_icon.jpg', // デフォルト画像も設定
+        };
+    });
+    console.log("Selected characters to apply:", characterSelections);
+    emit("apply", characterSelections); // 親コンポーネントにデータを送信
+    closeModal();
+};
+
+onMounted(() => {
+    console.log("Characters in FilterCharacterModal:", props.characters);
+    console.log("Initial selectedCharacters in Modal:", localSelected.value);
 });
 
-const emit = defineEmits(["close", "add"]);
 
-const selectedCharacter = ref(null);
-const selectedType = ref("EITHER"); // 初期値を「EITHER」に設定
-const types = ["EITHER", "CLASSIC", "MODERN"];
 
-const closeModal = () => {
-  resetSelections(); // 選択データをリセット
-  emit("close");
-};
-
-const addSelectedCharacter = () => {
-  if (selectedCharacter.value && selectedType.value) {
-    emit("add", {
-      name: selectedCharacter.value.name,
-      image: selectedCharacter.value.image,
-      type: selectedType.value,
-    });
-    resetSelections(); // 選択データをリセット
-  }
-};
-
-const resetSelections = () => {
-  selectedCharacter.value = null;
-  selectedType.value = null;
-};
-</script>
-
+  // モーダルを閉じる
+  const closeModal = () => {
+    emit("close");
+  };
+  </script>
 
   <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap');
 
   .modal-overlay {
     position: fixed;

@@ -77,6 +77,7 @@ const message = ref('');
 const isHost = ref(room.host_id === usePage().props.auth.user.id);
 const showHostModal = ref(false);
 const showParticipantModal = ref(false);
+const alertMessage = usePage().props.alert || null; // アラートメッセージ
 
 const lpRanges = [
   { rank: 'MASTER', min: 25000, color: '#1BF4B9' },
@@ -168,6 +169,7 @@ const leaveRoom = () => {
 };
 
 onMounted(() => {
+  // WebSocket チャネルをリスン
   window.Echo.channel(`room.${room.id}`)
     .listen('MessageSent', (event) => {
       chats.value.push({
@@ -175,6 +177,11 @@ onMounted(() => {
         message: event.message,
       });
     });
+
+  // セッションに保存されたアラートメッセージを表示
+  if (alertMessage) {
+    alert(alertMessage);
+  }
 });
 
 function parseCharacters(characters) {
@@ -196,7 +203,6 @@ function parseCharacters(characters) {
     return [];
   }
 }
-
 </script>
 
   <style scoped>

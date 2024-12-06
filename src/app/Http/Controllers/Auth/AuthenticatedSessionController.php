@@ -42,6 +42,8 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        session()->forget('current_room_id');
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
