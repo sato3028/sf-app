@@ -20,8 +20,8 @@
             :filters="filters"
             :attributes="attributes"
             :characters="characters"
-        @apply-filters="updateFilter"
-        @reset-filters="resetFilter"
+        @apply-filters="applyFilters"
+        @reset-filters="resetFilters"
           />
 
           <!-- ルーム一覧表示 -->
@@ -86,9 +86,9 @@
                       :alt="character.name"
                       class="character-image"
                       :class="{
-                        'border-gray': character.type === '指定なし',
-                        'border-purple': character.type === 'クラシック',
-                        'border-orange': character.type === 'モダン',
+                        'border-gray': character.type === 'EITHER',
+                        'border-purple': character.type === 'CLASSIC',
+                        'border-orange': character.type === 'MODERN',
                       }"
                     />
                   </div>
@@ -114,9 +114,9 @@
                       :alt="character.name"
                       class="character-image"
                       :class="{
-                        'border-gray': character.type === '指定なし',
-                        'border-purple': character.type === 'クラシック',
-                        'border-orange': character.type === 'モダン',
+                        'border-gray': character.type === 'EITHER',
+                        'border-purple': character.type === 'CLASSIC',
+                        'border-orange': character.type === 'MODERN',
                       }"
                     />
                   </div>
@@ -192,31 +192,31 @@ const updateFilter = (newFilters) => {
 
 // charactersリストをオブジェクト型に変更
 const characters = [
-  { name: 'リュウ', image: '/images/ryu_icon.jpg' },
-  { name: 'ルーク', image: '/images/luke_icon.jpg' },
-  { name: 'ジェイミー', image: '/images/jamie_icon.jpg' },
-  { name: '春麗', image: '/images/chunli_icon.jpg' },
-  { name: 'ガイル', image: '/images/guile_icon.jpg' },
-  { name: 'キンバリー', image: '/images/kimberly_icon.jpg' },
-  { name: 'ジュリ', image: '/images/juri_icon.jpg' },
-  { name: 'ケン', image: '/images/ken_icon.jpg' },
-  { name: 'ブランカ', image: '/images/blanka_icon.jpg' },
-  { name: 'ダルシム', image: '/images/dhalsim_icon.jpg' },
-  { name: 'エドモンド本田', image: '/images/honda_icon.jpg' },
-  { name: 'DJ', image: '/images/deejay_icon.jpg' },
-  { name: 'マノン', image: '/images/manon_icon.jpg' },
-  { name: 'マリーザ', image: '/images/marisa_icon.jpg' },
+  { name: 'RYU', image: '/images/ryu_icon.jpg' },
+  { name: 'LUKE', image: '/images/luke_icon.jpg' },
+  { name: 'JAMIE', image: '/images/jamie_icon.jpg' },
+  { name: 'CHUNLI', image: '/images/chunli_icon.jpg' },
+  { name: 'GUILE', image: '/images/guile_icon.jpg' },
+  { name: 'KIMBERLY', image: '/images/kimberly_icon.jpg' },
+  { name: 'JURI', image: '/images/juri_icon.jpg' },
+  { name: 'KEN', image: '/images/ken_icon.jpg' },
+  { name: 'BLANKA', image: '/images/blanka_icon.jpg' },
+  { name: 'DHALSIM', image: '/images/dhalsim_icon.jpg' },
+  { name: 'HONDA', image: '/images/honda_icon.jpg' },
+  { name: 'DEEJAY', image: '/images/deejay_icon.jpg' },
+  { name: 'MANON', image: '/images/manon_icon.jpg' },
+  { name: 'MARISA', image: '/images/marisa_icon.jpg' },
   { name: 'JP', image: '/images/jp_icon.jpg' },
-  { name: 'ザンギエフ', image: '/images/zangief_icon.jpg' },
-  { name: 'リリィ', image: '/images/lily_icon.jpg' },
-  { name: 'キャミィ', image: '/images/cammy_icon.jpg' },
-  { name: 'ラシード', image: '/images/rashid_icon.jpg' },
-  { name: 'アキ', image: '/images/aki_icon.jpg' },
-  { name: 'エド', image: '/images/ed_icon.jpg' },
-  { name: '豪鬼', image: '/images/gouki_icon.jpg' },
-  { name: 'ベガ', image: '/images/vega_icon.jpg' },
-  { name: 'テリー', image: '/images/terry_icon.jpg' },
-  { name: 'なんでも', image: '/images/all_icon.jpg' },
+  { name: 'ZANGIEF', image: '/images/zangief_icon.jpg' },
+  { name: 'LILY', image: '/images/lily_icon.jpg' },
+  { name: 'CAMMY', image: '/images/cammy_icon.jpg' },
+  { name: 'RASHID', image: '/images/rashid_icon.jpg' },
+  { name: 'AKI', image: '/images/aki_icon.jpg' },
+  { name: 'ED', image: '/images/ed_icon.jpg' },
+  { name: 'GOUKI', image: '/images/gouki_icon.jpg' },
+  { name: 'VEGA', image: '/images/vega_icon.jpg' },
+  { name: 'TERRY', image: '/images/terry_icon.jpg' },
+  { name: 'ALL', image: '/images/all_icon.jpg' },
 ];
 
   // フィルターの設定
@@ -278,20 +278,49 @@ const characters = [
   });
 };
 
-  // フィルターを適用する関数
-  const applyFilters = () => {
-    console.log('送信するフィルター:', filters);
-    router.get('/rooms', {
-        host_rank: filters.host_rank,
-        rank_range: filters.rank_range,
-        host_characters: filters.host_characters,
-        categories: filters.attributes,
+const applyFilters = (newFilters) => {
+    console.log("applyFiltersが呼び出されました");
+
+    // 新しいフィルターを現在のフィルターにマージ
+    Object.assign(filters, newFilters);
+    console.log("現在のfilters:", filters);
+
+    // サーバーに送信するフィルターのクリーンアップ
+    const sanitizedFilters = {
+        host_rank: [...filters.host_rank], // Proxy解除
+        host_mr_range: [...filters.host_mr_range], // Proxy解除
+        rank_range: [...filters.rank_range], // Proxy解除
+        requested_mr_range: [...filters.requested_mr_range],
+        host_characters: filters.host_characters.map((char) => char.name), // name のみ
+        requested_characters: filters.requested_characters.map((char) => char.name), // name のみ
+        attributes: [...filters.attributes], // Proxy解除
+    };
+    console.log("Proxy解除後のフィルター:", sanitizedFilters);
+
+    // フィルターをサーバーに送信
+    router.get('/rooms', sanitizedFilters, {
+        preserveState: true, // ページの状態を保持
+        replace: true, // URLの更新 (クエリパラメータを反映)
+        onSuccess: (response) => {
+            console.log("フィルタ結果:", response.props.rooms);
+            rooms.value = response.props.rooms; // フィルタ結果を更新
+        },
+        onError: (errors) => {
+            console.error("フィルタ適用エラー:", errors);
+        },
     });
 };
 
+  // フィルターの表示/非表示の管理
+  const isFilterVisible = ref(false);
+  const toggleFilter = () => {
+    isFilterVisible.value = !isFilterVisible.value;
+  };
 
-  // フィルターをリセットする関数
-  const resetFilter = () => {
+  const resetFilters = () => {
+  console.log('リセットボタンが押されました');
+
+  // フィルターを初期状態にリセット
   Object.assign(filters, {
     host_rank: [1, 25000],
     host_mr_range: [1000, 2500],
@@ -301,24 +330,23 @@ const characters = [
     requested_characters: [],
     attributes: [],
   });
-  isFilterApplied.value = false; // フィルター適用を解除
+
+  isFilterApplied.value = false; // フィルター適用状態をリセット
+
+  // サーバーから全ルームを取得
+  router.get('/rooms', {}, {
+    preserveState: true, // ページの状態を保持
+    replace: true, // URLの更新 (クエリパラメータを反映)
+    onSuccess: (response) => {
+      console.log('フィルターリセット後のルーム一覧:', response.props.rooms);
+      rooms.value = response.props.rooms; // 全ルームを更新
+    },
+    onError: (errors) => {
+      console.error('フィルターリセットエラー:', errors);
+    },
+  });
 };
 
-  // JSONかどうかをチェックする関数
-  const isJson = (str) => {
-    try {
-      JSON.parse(str);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  };
-
-  // フィルターの表示/非表示の管理
-  const isFilterVisible = ref(false);
-  const toggleFilter = () => {
-    isFilterVisible.value = !isFilterVisible.value;
-  };
 
   // ランク範囲のリスト
   const lpRanges = [

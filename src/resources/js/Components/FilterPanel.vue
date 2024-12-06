@@ -44,12 +44,12 @@
       <div class="input-group">
         <label for="host_characters">ルーム作成者の使用キャラクター</label>
         <button class="add-character-button" @click="showHostCharacterModal = true">キャラクターを追加</button>
-        <CharacterModal
-          v-if="showHostCharacterModal"
-          :show="showHostCharacterModal"
-          :characters="characters"
-          @close="closeHostCharacterModal"
-          @add="addHostCharacter"
+        <FilterCharacterModal
+        :show="showHostCharacterModal"
+        :characters="characters"
+        :selected-characters="filters.host_characters"
+        @close="showHostCharacterModal = false"
+        @apply="applyCharacterFilter"
         />
         <div class="selected-characters-list">
           <div v-for="(char, index) in selectedHostCharacters" :key="index" class="character-card">
@@ -100,18 +100,18 @@
       <div class="input-group">
         <label for="requested_characters">募集キャラクター</label>
         <button class="add-character-button" @click="showRequestedCharacterModal = true">キャラクターを追加</button>
-        <CharacterModal
-          v-if="showRequestedCharacterModal"
-          :show="showRequestedCharacterModal"
-          :characters="characters"
-          @close="closeRequestedCharacterModal"
-          @add="addRequestedCharacter"
-        />
+        <FilterCharacterModal
+        :show="showRequestedCharacterModal"
+        :characters="characters"
+        :selected-characters="filters.requested_characters"
+        @close="showRequestedCharacterModal = false"
+        @apply="applyRequestedCharacterFilter"
+      />
         <div class="selected-characters-list">
-          <div v-for="(char, index) in selectedRequestedCharacters" :key="index" class="character-card">
-            <img :src="char.image" alt="" class="character-image" />
-            <button @click="removeRequestedCharacter(index)" class="delete-button">×</button>
-          </div>
+            <div v-for="(char, index) in selectedRequestedCharacters" :key="index" class="character-card">
+      <img :src="char.image" alt="" class="character-image" />
+      <button @click="removeRequestedCharacter(index)" class="delete-button">×</button>
+    </div>
         </div>
       </div>
 
@@ -139,8 +139,8 @@
   </template>
 
   <script setup>
-  import { ref, reactive } from 'vue';
-  import CharacterModal from '@/Components/CharacterModal.vue';
+  import { ref, reactive, onMounted } from 'vue';
+  import FilterCharacterModal from "@/Components/FilterCharacterModal.vue";
 
   const props = defineProps({
     characters: Array,
@@ -159,6 +159,8 @@
   requested_characters: [],
   attributes: [],
 });
+
+const emit = defineEmits(["apply-filters", "reset-filters"]);
 
   const lpRanges = [
   { rank: 'MASTER', min: 25000, color: '#1BF4B9' },
@@ -199,6 +201,10 @@
   { rank: 'ROOKIE1', min: 0, max: 200, color: '#00001C' },
 ];
 
+onMounted(() => {
+    console.log('Characters in FilterPanel:', JSON.stringify(props.characters));
+});
+
 const getRankColor = (lp) => {
   if (lp === 25000) return '#1BF4B9'; // MASTER color
   const range = lpRanges.find((r) => lp >= r.min && (!r.max || lp <= r.max));
@@ -212,24 +218,74 @@ const getRankText = (lp) => {
 };
 
   const showHostCharacterModal = ref(false);
+
+  const toggleHostCharacterModal = () => {
+  showHostCharacterModal.value = !showHostCharacterModal.value;
+  console.log("HostCharacterModal state:", showHostCharacterModal.value);
+};
   const selectedHostCharacters = reactive([]);
-  const addHostCharacter = (character) => selectedHostCharacters.push(character);
-  const removeHostCharacter = (index) => selectedHostCharacters.splice(index, 1);
-  const closeHostCharacterModal = () => (showHostCharacterModal.value = false);
+  const showCharacterModal = ref(false);
+  const removeHostCharacter = (index) => {
+    // selectedHostCharactersから削除
+    selectedHostCharacters.splice(index, 1);
+
+    // filters.host_charactersも同期して更新
+    filters.host_characters = selectedHostCharacters.map((char) => ({ ...char }));
+    console.log("Updated filters.host_characters:", filters.host_characters);
+};
 
   const showRequestedCharacterModal = ref(false);
   const selectedRequestedCharacters = reactive([]);
-  const addRequestedCharacter = (character) => selectedRequestedCharacters.push(character);
-  const removeRequestedCharacter = (index) => selectedRequestedCharacters.splice(index, 1);
-  const closeRequestedCharacterModal = () => (showRequestedCharacterModal.value = false);
+  const removeRequestedCharacter = (index) => {
+  selectedRequestedCharacters.splice(index, 1);
 
-  const applyFilters = () => {
-  props.onApplyFilters(filters);
+  // filters.requested_charactersも更新
+  filters.requested_characters = selectedRequestedCharacters.map((char) => ({ ...char }));
+  console.log("Updated filters.requested_characters:", filters.requested_characters);
 };
+
+const applyFilters = () => {
+    console.log('applyFiltersが呼び出されました');
+
+    // フィルターをクリーンアップして送信
+    const sanitizedFilters = {
+        ...filters,
+        attributes: filters.attributes.map(Number), // 数値型に変換
+    };
+
+    console.log("Proxy解除後のフィルター:", sanitizedFilters);
+
+    props.onApplyFilters(sanitizedFilters);
+};
+
+
 
 const resetFilters = () => {
-  props.onResetFilters();
+  console.log('FilterPanel: リセットボタンが押されました');
+  emit('reset-filters'); // 親コンポーネントにイベントを送信
 };
+
+
+
+const applyCharacterFilter = (selectedCharacters) => {
+    console.log("Characters applied to filters:", selectedCharacters);
+    console.log("Before update:", filters.host_characters);
+    filters.host_characters = selectedCharacters.map((char) => ({ ...char }));
+    console.log("After update:", filters.host_characters);
+    selectedHostCharacters.splice(0, selectedHostCharacters.length, ...filters.host_characters);
+    console.log("Updated selectedHostCharacters:", selectedHostCharacters);
+    showHostCharacterModal.value = false;
+};
+
+
+
+const applyRequestedCharacterFilter = (selectedCharacters) => {
+  filters.requested_characters = selectedCharacters.map((char) => ({ ...char }));
+  selectedRequestedCharacters.splice(0, selectedRequestedCharacters.length, ...filters.requested_characters);
+  console.log("Updated selectedRequestedCharacters:", selectedRequestedCharacters);
+  showRequestedCharacterModal.value = false;
+};
+
   </script>
 
 <style scoped>
