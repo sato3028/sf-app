@@ -184,11 +184,11 @@ class RoomController extends Controller
 
     public function store(Request $request)
     {
-        // バリデーションの修正
+        // バリデーション
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'host_characters' => 'required|array',
-            'requested_characters' => 'required|array', // 募集キャラクターを必須に
+            'requested_characters' => 'required|array',
             'rank_range' => 'required|array',
             'rank_range.0' => 'required|integer|min:1|max:25000',
             'rank_range.1' => 'required|integer|min:1|max:25000',
@@ -200,40 +200,39 @@ class RoomController extends Controller
             'attributes' => 'nullable|array',
         ]);
 
-        try {
-            // ルームを作成
-            $room = new Room();
-            $room->host_id = auth()->id();
-            $room->title = $validated['title'];
-            $room->host_username = auth()->user()->name;
-            $room->host_characters = json_encode(
-                array_map('array_map', ['strval'], $validated['host_characters'])
-            );
-            $room->requested_characters = json_encode($validated['requested_characters']); // 募集キャラクターを保存
-            $room->host_rank = $validated['host_rank'];
-            $room->host_mr = $validated['host_mr'] ?? null;
-            $room->min_rank = $validated['rank_range'][0];
-            $room->max_rank = $validated['rank_range'][1];
-            $room->min_mr = $validated['mr_range'][0] ?? null;
-            $room->max_mr = $validated['mr_range'][1] ?? null;
-            $room->status = 'open';
-            $room->save();
-
-            // カテゴリーの保存
-            if (!empty($validated['attributes'])) {
-                $room->attributes()->attach($validated['attributes']);
-            }
-
-            session(['current_room_id' => $room->id]);
-
-            Log::info('現在のルームIDをセッションに保存:', ['current_room_id' => session('current_room_id')]);
-
-            // Inertiaでのリダイレクト
-            return Inertia::location(route('rooms.show', ['room' => $room->id]));
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Room creation failed: ' . $e->getMessage()], 500);
+        // 現在のユーザーの既存ルームを削除
+        $existingRoom = Room::where('host_id', auth()->id())->first();
+        if ($existingRoom) {
+            $existingRoom->delete();
+            session(['alert' => '既存のルームを削除しました']);
         }
+
+        // 新しいルームを作成
+        $room = Room::create([
+            'host_id' => auth()->id(),
+            'title' => $validated['title'],
+            'host_username' => auth()->user()->name,
+            'host_characters' => json_encode($validated['host_characters']),
+            'requested_characters' => json_encode($validated['requested_characters']),
+            'host_rank' => $validated['host_rank'],
+            'host_mr' => $validated['host_mr'] ?? null,
+            'min_rank' => $validated['rank_range'][0],
+            'max_rank' => $validated['rank_range'][1],
+            'min_mr' => $validated['mr_range'][0] ?? null,
+            'max_mr' => $validated['mr_range'][1] ?? null,
+            'status' => 'open',
+        ]);
+
+        // カテゴリーを保存
+        if (!empty($validated['attributes'])) {
+            $room->attributes()->attach($validated['attributes']);
+        }
+
+        session(['current_room_id' => $room->id]);
+
+        return Inertia::location(route('rooms.show', ['room' => $room->id]));
     }
+
 
     public function show($roomId)
     {
@@ -286,4 +285,15 @@ class RoomController extends Controller
 
         return back()->with('error', 'ルーム退出に失敗しました');
     }
+
+    public function cleanupExpiredRooms()
+{
+    $expiredRooms = Room::where('created_at', '<', Carbon::now()->subDay())->get();
+    foreach ($expiredRooms as $room) {
+        $room->delete();
+    }
+
+    Log::info('24時間経過したルームを削除しました');
+}
+
 }
