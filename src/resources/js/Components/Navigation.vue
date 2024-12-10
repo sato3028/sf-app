@@ -118,13 +118,22 @@
 };
 
 const logout = () => {
-  router.post(route('logout'), {}, {
-    onSuccess: () => {
-      isLoggedIn.value = false; // ログイン状態をfalseに更新
-      location.reload(); // ページをリロードして状態を強制更新
-    },
-  });
+  // 確認ダイアログを表示
+  const confirmLogout = confirm("ログアウト時にルームが削除されますがよろしいですか？");
+
+  if (confirmLogout) {
+    router.post(route('logout'), {}, {
+      onSuccess: () => {
+        isLoggedIn.value = false; // ログイン状態をfalseに更新
+        location.reload(); // ページをリロードして状態を強制更新
+      },
+    });
+  } else {
+    // キャンセルされた場合はログアウト処理を中断
+    console.log("ログアウトがキャンセルされました");
+  }
 };
+
   </script>
 
   <style scoped>
