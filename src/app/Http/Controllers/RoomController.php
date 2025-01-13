@@ -10,6 +10,8 @@ use App\Models\Chat;
 use App\Models\Participant;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
+
 
 class RoomController extends Controller
 {
@@ -172,9 +174,10 @@ class RoomController extends Controller
         $data['host_username'] = auth()->user()->name;
 
         return Inertia::render('Rooms/Confirm', [
-            'formData' => $data,
+            'formData' => $data, // 確認ページ用のデータ
             'attributes' => RoomAttribute::all(),
         ]);
+
     }
 
 
@@ -227,6 +230,10 @@ class RoomController extends Controller
         if (!empty($validated['attributes'])) {
             $room->attributes()->attach($validated['attributes']);
         }
+        Log::info('セッション削除前:', session()->all());
+        session()->forget('createForm');
+        Log::info('セッション削除後:', session()->all());
+
 
         session(['current_room_id' => $room->id]);
 
@@ -264,6 +271,7 @@ class RoomController extends Controller
             $room->delete();
 
             session()->forget('current_room_id');
+            session()->forget('createForm');
 
             return redirect()->route('rooms.index')->with('message', 'ルームを解散しました');
         }

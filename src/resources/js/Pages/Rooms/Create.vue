@@ -285,9 +285,6 @@ const addCharacter = (character) => {
 
 const confirmRoom = () => {
   try {
-    console.log("confirmRoom 関数が呼び出されました");
-
-    // フォームにキャラクター情報を反映
     form.host_characters = selectedCharacters.map((char) => ({
       name: char.name,
       image: char.image,
@@ -300,18 +297,15 @@ const confirmRoom = () => {
       type: char.type,
     }));
 
-    // フォームバリデーション
     if (!validateForm()) {
       console.error("フォームにエラーがあります:", formErrors);
       return;
     }
 
-    // 純粋なオブジェクトに変換
-    const formData = JSON.parse(JSON.stringify(form));
-    console.log('送信前 - formData:', JSON.stringify(formData, null, 2));
+    // sessionStorage に保存
+    sessionStorage.setItem('createForm', JSON.stringify(form));
 
-    // サーバーにデータ送信
-    router.post(route("rooms.confirm"), formData, {
+    router.post(route("rooms.confirm"), form, {
       onSuccess: () => {
         console.log("Confirmページに遷移しました");
       },
@@ -323,6 +317,7 @@ const confirmRoom = () => {
     console.error("例外が発生しました:", error);
   }
 };
+
 
 
 
