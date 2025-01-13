@@ -185,18 +185,20 @@ function submitRoom() {
 
 
 function goBack() {
+  // 現在のフォームデータを保存
+  sessionStorage.setItem('createForm', JSON.stringify(props.formData));
+
+  // 作成ページに戻る
   router.get('/rooms/create', {}, {
     onSuccess: () => {
-      const savedForm = sessionStorage.getItem('createForm');
-      if (savedForm) {
-        console.log("セッションデータを復元します:", savedForm);
-      }
+      console.log('セッションデータを保存しました:', sessionStorage.getItem('createForm'));
     },
     onError: (error) => {
-      console.log("戻る操作でエラーが発生しました:", error);
+      console.error('戻る操作でエラーが発生しました:', error);
     },
   });
 }
+
 
 
   function getRankText(lp) {
