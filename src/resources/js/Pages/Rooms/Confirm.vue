@@ -108,8 +108,21 @@
   });
 
   onMounted(() => {
-    console.log("Confirm.vueで受け取ったformData:", formData);
-  });
+  const savedForm = sessionStorage.getItem('createForm');
+  if (savedForm) {
+    try {
+      Object.assign(form, JSON.parse(savedForm));
+      console.log('セッションデータを復元しました:', form);
+    } catch (e) {
+      console.error('セッションデータの読み込みに失敗しました:', e);
+      sessionStorage.removeItem('createForm');
+    }
+  } else {
+    console.log('セッションデータが存在しません');
+  }
+});
+
+
 
   const characters = [
   { name: 'RYU', image: '/images/ryu_icon.jpg' },
@@ -153,8 +166,16 @@ function getCharacterImage(character) {
 function submitRoom() {
   router.post('/rooms', props.formData, {
     onSuccess: () => {
-      sessionStorage.removeItem('createForm'); // 入力内容をクリア
-      router.visit('/');
+      // セッションストレージを削除
+      sessionStorage.removeItem('createForm');
+
+      // ログを localStorage に記録
+      localStorage.setItem('log', 'セッションストレージを削除完了');
+
+      // 確認用ログ
+      console.log('セッションストレージを削除しました:', sessionStorage.getItem('createForm'));
+
+      // サーバーのリダイレクト先へ遷移
     },
     onError: (errors) => {
       console.error('エラー:', errors);
@@ -164,10 +185,19 @@ function submitRoom() {
 
 
 function goBack() {
-  // formDataをsessionStorageに保存
-  sessionStorage.setItem('createForm', JSON.stringify(props.formData));
-  router.get('/rooms/create');
+  router.get('/rooms/create', {}, {
+    onSuccess: () => {
+      const savedForm = sessionStorage.getItem('createForm');
+      if (savedForm) {
+        console.log("セッションデータを復元します:", savedForm);
+      }
+    },
+    onError: (error) => {
+      console.log("戻る操作でエラーが発生しました:", error);
+    },
+  });
 }
+
 
   function getRankText(lp) {
     const lpRanges = [
