@@ -1,4 +1,5 @@
 <template>
+    <Head title="ルーム一覧" />
     <div class="outer-container">
         <Navigation :currentRoute="'index'" />
 
@@ -102,7 +103,7 @@
 
 <script setup>
 import { reactive, ref, computed, defineProps, onMounted } from 'vue';
-import { router, usePage } from '@inertiajs/vue3';
+import { router, usePage, Head } from '@inertiajs/vue3';
 import Navigation from '@/Components/Navigation.vue';
 import Ranking from '@/Components/Ranking.vue';
 import ModalLogin from '@/Pages/Auth/ModalLogin.vue';

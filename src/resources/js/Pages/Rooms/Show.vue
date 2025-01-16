@@ -1,4 +1,5 @@
 <template>
+    <Head title="チャットルーム" />
     <div class="outer-container">
         <Navigation :currentRoute="'show'" />
         <div class="content-panel">
@@ -62,8 +63,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { router } from '@inertiajs/vue3';
-import { usePage } from '@inertiajs/vue3';
+import { router, usePage, Head } from '@inertiajs/vue3';
 import Navigation from '@/Components/Navigation.vue';
 import HostModal from '@/Components/HostModal.vue';
 import ParticipantModal from '@/Components/ParticipantModal.vue';
