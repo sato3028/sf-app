@@ -1,4 +1,5 @@
 <template>
+    <Head title="ルーム作成" />
     <div class="outer-container">
         <Navigation :currentRoute="'create'" />
         <div class="content-panel">
@@ -145,7 +146,7 @@
 
 <script setup>
 import { reactive, computed, defineProps, ref, nextTick, onMounted } from 'vue';
-import { router, usePage } from '@inertiajs/vue3';
+import { router, usePage, Head } from '@inertiajs/vue3';
 import Navigation from '@/Components/Navigation.vue';
 import CharacterModal from "@/Components/CharacterModal.vue";
 

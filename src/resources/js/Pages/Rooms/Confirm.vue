@@ -1,4 +1,5 @@
 <template>
+    <Head title="ルーム作成内容確認" />
     <div class="outer-container">
         <Navigation :currentRoute="'confirm'" />
         <div class="content-panel">
@@ -90,7 +91,7 @@
 </template>
 
 <script setup>
-import { router } from '@inertiajs/vue3';
+import { router, Head } from '@inertiajs/vue3';
 import { defineProps, computed, onMounted } from 'vue';
 import Navigation from '@/Components/Navigation.vue';
 
