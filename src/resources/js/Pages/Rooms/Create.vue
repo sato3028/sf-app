@@ -52,6 +52,7 @@
                                 <button class="delete-button" @click="removeCharacter(index)">×</button>
                             </div>
                         </div>
+                        <p v-if="formErrors.host_characters" class="error-message">{{ formErrors.host_characters }}</p>
                     </div>
 
                     <CharacterModal v-if="showCharacterModal" :show="showCharacterModal" :characters="characters"
@@ -87,6 +88,7 @@
                         <v-range-slider v-if="form.rank_range[1] === 25000" v-model="form.mr_range" :max="2500"
                             :min="1000" :step="1" hide-details track-color="#d6d0da" thumb-color="#6b4ef5"
                             class="input-field"></v-range-slider>
+                            <p v-if="formErrors.rank_range" class="error-message">{{ formErrors.rank_range }}</p>
                     </div>
 
                     <div class="input-group">
@@ -110,6 +112,7 @@
                                 <button class="delete-button" @click="removeRequestedCharacter(index)">×</button>
                             </div>
                         </div>
+                        <p v-if="formErrors.requested_characters" class="error-message">{{ formErrors.requested_characters }}</p>
                     </div>
 
                     <CharacterModal v-if="showRequestedCharacterModal" :show="showRequestedCharacterModal"
@@ -363,15 +366,12 @@ const formErrors = reactive({
 });
 
 const validateForm = () => {
-    formErrors.host_characters = form.host_characters.length
-        ? ""
-        : "この項目を入力してください";
-    formErrors.title = form.title ? "" : "この項目を入力してください";
-    formErrors.requested_characters = form.requested_characters.length
-        ? ""
-        : "この項目を入力してください";
+    formErrors.title = form.title.trim() ? '' : 'この項目を入力してください';
+    formErrors.host_characters = form.host_characters.length ? '' : 'この項目を入力してください';
+    formErrors.requested_characters = form.requested_characters.length ? '' : 'この項目を入力してください';
+    formErrors.rank_range = form.rank_range.length === 2 ? '' : 'この項目を入力してください';
 
-    return !Object.values(formErrors).some((error) => error);
+    return !Object.values(formErrors).some(error => error);
 };
 
 const menuOpen = ref(false);
@@ -657,4 +657,11 @@ input[type="text"] {
 .delete-button:hover {
     background-color: #ff4c4c;
 }
+
+.error-message {
+    color: red;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
 </style>
