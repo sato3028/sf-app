@@ -103,7 +103,6 @@ const goToIndex = () => {
 
 const goToCreateRoom = () => {
     if (!isLoggedIn.value) {
-        console.log('User is not logged in. Showing modal.');
         isModalOpen.value = true;
         return;
     }
@@ -122,7 +121,6 @@ const logout = () => {
             },
         });
     } else {
-        console.log("ログアウトがキャンセルされました");
     }
 };
 

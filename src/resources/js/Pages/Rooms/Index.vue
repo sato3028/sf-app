@@ -118,10 +118,6 @@ const attributes = props.attributes || [];
 const isLoggedIn = ref(props.auth?.user !== null);
 const needsNameSetup = ref(props.needsNameSetup);
 
-onMounted(() => {
-    console.log("Index.vueで取得したroomsデータ:", rooms.value);
-});
-
 function getCharacterImage(characterName) {
     const character = characters.find((char) => char.name === characterName);
     return character ? character.image : '/images/default_icon.jpg';
@@ -206,7 +202,6 @@ const filteredRooms = computed(() => {
 
 const joinRoom = (roomId) => {
     if (!isLoggedIn.value) {
-        console.log('User is not logged in, showing modal.');
         isModalOpen.value = true;
         return;
     }
@@ -216,16 +211,13 @@ const joinRoom = (roomId) => {
             router.visit(`/rooms/${roomId}`);
         },
         onError: (errors) => {
-            console.log(errors);
         },
     });
 };
 
 const applyFilters = (newFilters) => {
-    console.log("applyFiltersが呼び出されました");
 
     Object.assign(filters, newFilters);
-    console.log("現在のfilters:", filters);
 
     const sanitizedFilters = {
         host_rank: [...filters.host_rank],
@@ -236,17 +228,14 @@ const applyFilters = (newFilters) => {
         requested_characters: filters.requested_characters.map((char) => char.name),
         attributes: [...filters.attributes],
     };
-    console.log("Proxy解除後のフィルター:", sanitizedFilters);
 
     router.get('/rooms', sanitizedFilters, {
         preserveState: true,
         replace: true,
         onSuccess: (response) => {
-            console.log("フィルタ結果:", response.props.rooms);
             rooms.value = response.props.rooms;
         },
         onError: (errors) => {
-            console.error("フィルタ適用エラー:", errors);
         },
     });
 };
@@ -257,7 +246,6 @@ const toggleFilter = () => {
 };
 
 const resetFilters = () => {
-    console.log('リセットボタンが押されました');
 
     Object.assign(filters, {
         host_rank: [1, 25000],
@@ -275,11 +263,9 @@ const resetFilters = () => {
         preserveState: true,
         replace: true,
         onSuccess: (response) => {
-            console.log('フィルターリセット後のルーム一覧:', response.props.rooms);
             rooms.value = response.props.rooms;
         },
         onError: (errors) => {
-            console.error('フィルターリセットエラー:', errors);
         },
     });
 };

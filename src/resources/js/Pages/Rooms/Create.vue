@@ -224,7 +224,6 @@ const showCharacterModal = ref(false);
 
 const addCharacter = (character) => {
     selectedCharacters.push(character);
-    console.log("使用キャラクター:", selectedCharacters);
 };
 
 const confirmRoom = () => {
@@ -242,22 +241,14 @@ const confirmRoom = () => {
         }));
 
         if (!validateForm()) {
-            console.error("フォームにエラーがあります:", formErrors);
             return;
         }
 
         sessionStorage.setItem('createForm', JSON.stringify(form));
 
-        router.post(route("rooms.confirm"), form, {
-            onSuccess: () => {
-                console.log("Confirmページに遷移しました");
-            },
-            onError: (errors) => {
-                console.error("エラーが発生しました:", errors);
-            },
-        });
+        router.post(route("rooms.confirm"), form);
     } catch (error) {
-        console.error("例外が発生しました:", error);
+        console.error(error);
     }
 };
 
@@ -274,7 +265,6 @@ const showRequestedCharacterModal = ref(false);
 
 const addRequestedCharacter = (character) => {
     requestedCharacters.push(character);
-    console.log("募集キャラクター:", requestedCharacters);
 };
 
 const closeRequestedCharacterModal = () => {

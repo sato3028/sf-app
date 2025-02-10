@@ -157,10 +157,6 @@ const lpRanges = [
     { rank: 'ROOKIE1', min: 0, max: 200, color: '#00001C' },
 ];
 
-onMounted(() => {
-    console.log('Characters in FilterPanel:', JSON.stringify(props.characters));
-});
-
 const getRankColor = (lp) => {
     if (lp === 25000) return '#1BF4B9';
     const range = lpRanges.find((r) => lp >= r.min && (!r.max || lp <= r.max));
@@ -177,14 +173,12 @@ const showHostCharacterModal = ref(false);
 
 const toggleHostCharacterModal = () => {
     showHostCharacterModal.value = !showHostCharacterModal.value;
-    console.log("HostCharacterModal state:", showHostCharacterModal.value);
 };
 const selectedHostCharacters = reactive([]);
 const showCharacterModal = ref(false);
 const removeHostCharacter = (index) => {
     selectedHostCharacters.splice(index, 1);
     filters.host_characters = selectedHostCharacters.map((char) => ({ ...char }));
-    console.log("Updated filters.host_characters:", filters.host_characters);
 };
 
 const showRequestedCharacterModal = ref(false);
@@ -193,18 +187,14 @@ const removeRequestedCharacter = (index) => {
     selectedRequestedCharacters.splice(index, 1);
 
     filters.requested_characters = selectedRequestedCharacters.map((char) => ({ ...char }));
-    console.log("Updated filters.requested_characters:", filters.requested_characters);
 };
 
 const applyFilters = () => {
-    console.log('applyFiltersが呼び出されました');
 
     const sanitizedFilters = {
         ...filters,
         attributes: filters.attributes.map(Number),
     };
-
-    console.log("Proxy解除後のフィルター:", sanitizedFilters);
 
     props.onApplyFilters(sanitizedFilters);
 };
@@ -212,19 +202,14 @@ const applyFilters = () => {
 
 
 const resetFilters = () => {
-    console.log('FilterPanel: リセットボタンが押されました');
     emit('reset-filters');
 };
 
 
 
 const applyCharacterFilter = (selectedCharacters) => {
-    console.log("Characters applied to filters:", selectedCharacters);
-    console.log("Before update:", filters.host_characters);
     filters.host_characters = selectedCharacters.map((char) => ({ ...char }));
-    console.log("After update:", filters.host_characters);
     selectedHostCharacters.splice(0, selectedHostCharacters.length, ...filters.host_characters);
-    console.log("Updated selectedHostCharacters:", selectedHostCharacters);
     showHostCharacterModal.value = false;
 };
 
@@ -233,7 +218,6 @@ const applyCharacterFilter = (selectedCharacters) => {
 const applyRequestedCharacterFilter = (selectedCharacters) => {
     filters.requested_characters = selectedCharacters.map((char) => ({ ...char }));
     selectedRequestedCharacters.splice(0, selectedRequestedCharacters.length, ...filters.requested_characters);
-    console.log("Updated selectedRequestedCharacters:", selectedRequestedCharacters);
     showRequestedCharacterModal.value = false;
 };
 
