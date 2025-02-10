@@ -60,15 +60,9 @@ const applySelection = () => {
             image: character ? character.image : '/images/default_icon.jpg',
         };
     });
-    console.log("Selected characters to apply:", characterSelections);
     emit("apply", characterSelections);
     closeModal();
 };
-
-onMounted(() => {
-    console.log("Characters in FilterCharacterModal:", props.characters);
-    console.log("Initial selectedCharacters in Modal:", localSelected.value);
-});
 
 const closeModal = () => {
     emit("close");

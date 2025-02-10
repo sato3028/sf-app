@@ -190,7 +190,6 @@ function parseCharacters(characters) {
 
         return [];
     } catch (e) {
-        console.error("Error parsing characters:", e);
         return [];
     }
 }

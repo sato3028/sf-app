@@ -105,13 +105,9 @@ onMounted(() => {
     if (savedForm) {
         try {
             Object.assign(form, JSON.parse(savedForm));
-            console.log('セッションデータを復元しました:', form);
         } catch (e) {
-            console.error('セッションデータの読み込みに失敗しました:', e);
             sessionStorage.removeItem('createForm');
         }
-    } else {
-        console.log('セッションデータが存在しません');
     }
 });
 
@@ -156,17 +152,14 @@ function submitRoom() {
     router.post('/rooms', props.formData, {
         onSuccess: () => {
             sessionStorage.removeItem('createForm');
-
             localStorage.setItem('log', 'セッションストレージを削除完了');
-
-            console.log('セッションストレージを削除しました:', sessionStorage.getItem('createForm'));
-
         },
         onError: (errors) => {
-            console.error('エラー:', errors);
+            // エラーハンドリングの処理が必要ならここに追加
         },
     });
 }
+
 
 
 function goBack() {
@@ -174,13 +167,12 @@ function goBack() {
 
     router.get('/rooms/create', {}, {
         onSuccess: () => {
-            console.log('セッションデータを保存しました:', sessionStorage.getItem('createForm'));
         },
         onError: (error) => {
-            console.error('戻る操作でエラーが発生しました:', error);
         },
     });
 }
+
 
 function getRankText(lp) {
     const lpRanges = [
@@ -224,7 +216,6 @@ function getRankText(lp) {
     if (lp === 25000) return { rank: 'MASTER', color: '#1BF4B9' };
 
     const range = lpRanges.find((r) => lp >= r.min && (r.max === undefined || lp <= r.max));
-    console.debug('ランク帯取得 - 結果:', range);
     return range ? { rank: range.rank, color: range.color } : { rank: '不明', color: '#000' };
 }
 
